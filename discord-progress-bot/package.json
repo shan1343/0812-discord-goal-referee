@@ -1,0 +1,17 @@
+{
+  "name": "goal-referee-discord",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/bot.js",
+    "register": "node scripts/register-commands.js",
+    "analyze:file": "node scripts/analyze-file.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "discord.js": "^14.22.1",
+    "dotenv": "^16.6.1"
+  }
+}
+
