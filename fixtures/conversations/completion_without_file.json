@@ -1,10 +1,18 @@
 {
-  "fixture_version": "1.0",
+  "fixture_version": "1.1",
   "scenario": "completion_without_file",
   "channel_id": "project-room",
   "messages": [
-    {"id": "1200", "author": "도윤", "created_at": "2026-08-12T12:00:00+09:00", "content": "Bot 작업 완료했어."},
-    {"id": "1201", "author": "유나", "created_at": "2026-08-12T12:01:00+09:00", "content": "필수 빌드 파일과 보안 테스트 결과는 아직 없어."},
-    {"id": "1202", "author": "유나", "created_at": "2026-08-12T12:02:00+09:00", "content": "/progress"}
-  ]
+    {"id": "1200", "author": "도윤", "created_at": "2026-08-12T12:00:00+09:00", "content": "Bot 작업 완료조건은 빌드 파일과 보안 테스트 결과 업로드야."},
+    {"id": "1201", "author": "도윤", "created_at": "2026-08-12T12:01:00+09:00", "content": "Bot 작업 완료했어."},
+    {"id": "1202", "author": "유나", "created_at": "2026-08-12T12:02:00+09:00", "content": "필수 빌드 파일과 보안 테스트 결과는 아직 없어."},
+    {"id": "1203", "author": "유나", "created_at": "2026-08-12T12:03:00+09:00", "content": "/progress"}
+  ],
+  "expected_outcome": {
+    "task": "Bot 작업",
+    "state": "review_pending",
+    "percent_max": 99,
+    "missing_evidence": ["빌드 파일", "보안 테스트 결과", "사람 승인"],
+    "must_not_do": ["완료 선언만으로 done 또는 100%로 확정하지 않는다."]
+  }
 }
