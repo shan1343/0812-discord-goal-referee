@@ -1,0 +1,15 @@
+{
+  "guildId": "150000000000000001",
+  "channelId": "150000000000000002",
+  "goal": {
+    "id": "GOAL-01",
+    "title": "발표 준비",
+    "deadline": "2026-08-12T08:00:00.000Z"
+  },
+  "members": ["민지", "준호", "서연", "도윤"],
+  "events": [],
+  "requirements": [],
+  "decisions": [],
+  "tasks": [],
+  "evidence": []
+}
