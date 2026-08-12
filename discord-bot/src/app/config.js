@@ -26,6 +26,11 @@ export function loadConfig(env = process.env, cwd = process.cwd()) {
       maxOutputTokens: integer(env.OPENAI_MAX_OUTPUT_TOKENS, 800),
       timeoutMs: integer(env.OPENAI_TIMEOUT_MS, 30_000),
     },
+    dashboard: {
+      apiUrl: env.GOAL_REFEREE_API_URL || "",
+      ingestToken: env.GOAL_REFEREE_INGEST_TOKEN || "",
+      publicUrl: env.GOAL_REFEREE_DASHBOARD_URL || "",
+    },
     liveChat: {
       maxHistory: Math.min(Math.max(integer(env.LIVE_CHAT_MAX_HISTORY, 20), 1), 50),
       cooldownMs: Math.max(integer(env.LIVE_CHAT_COOLDOWN_MS, 1_000), 0),
@@ -60,6 +65,7 @@ export function publicConfig(config) {
     messageContentEnabled: config.discord.enableMessageContent,
     aiMode: config.ai.mode,
     model: config.ai.model,
+    dashboardPublishingEnabled: Boolean(config.dashboard.apiUrl && config.dashboard.ingestToken),
     liveChatMaxHistory: config.liveChat.maxHistory,
     maxPackageBytes: config.storage.maxPackageBytes,
   };

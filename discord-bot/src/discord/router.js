@@ -71,7 +71,7 @@ function summaryProject(project) {
   };
 }
 
-export function createInteractionRouter({ service, config, chatResponder, goalReferee, fetchImpl = fetch, logger = console }) {
+export function createInteractionRouter({ service, config, chatResponder, goalReferee, dashboardPublisher, fetchImpl = fetch, logger = console }) {
   async function requireGuild(interaction) {
     if (!interaction.guildId) throw new Error("서버 채널에서만 사용할 수 있습니다.");
     return service.requireProject(interaction.guildId, interaction.channelId);
@@ -194,7 +194,18 @@ export function createInteractionRouter({ service, config, chatResponder, goalRe
         content: message.content,
       }));
     const result = await goalReferee.analyze({ guildId: interaction.guildId, channelId: interaction.channelId, messages });
-    return interaction.editReply({ content: goalRefereeText(result), allowedMentions: { parse: [] } });
+    const publish = await dashboardPublisher?.publish({
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      result,
+    });
+    const dashboardLink = publish?.published && config.dashboard.publicUrl
+      ? `\n\n대시보드: ${config.dashboard.publicUrl}`
+      : "";
+    return interaction.editReply({
+      content: `${goalRefereeText(result)}${dashboardLink}`,
+      allowedMentions: { parse: [] },
+    });
   }
 
   async function handleStatus(interaction) {
