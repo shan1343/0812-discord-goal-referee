@@ -90,12 +90,12 @@ Expected files
 - fixtures/conversations/deadline_conflict.json
 - fixtures/conversations/completion_without_file.json
 - fixtures/conversations/version_conflict.json
-- manifest with fixture_version, author, reviewer, and semantic_ref → concrete ID bindings
+- manifest with fixture_version, author, reviewer, and semantic_ref → `{id, kind, json_pointer}` bindings
 
 Acceptance
 - Add at least 20 total fake messages and at least 5 fake files/links.
 - Use no real personal data or secrets.
-- Bind every semantic_ref required by eval/goldset.json.
+- Bind every semantic_ref required by eval/goldset.json to an existing fixture object and matching kind.
 - C validates all bindings and reruns the same five scenarios.
 - Link the fixture commit and retest evidence.
 ```

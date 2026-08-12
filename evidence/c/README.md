@@ -6,7 +6,7 @@
 
 - Repository: `shan1343/0812-discord-goal-referee`
 - Commit: `5938b3206cb8ee3fa32cb0fe91c38c34ed60a178`
-- Tested at: `2026-08-12T14:26+09:00`
+- Tested at: `2026-08-12T14:27:42+09:00`
 - Runtime: 아직 없음
 - B fixture binding: 아직 없음
 
@@ -17,7 +17,7 @@
 - 입력: `eval/goldset.json`
 - 절차: PowerShell `ConvertFrom-Json`, scenario 이름/개수/고유 ID 검사
 - 결과: PASS
-- 관측값: `goldset_oracle=PASS`, scenario 5개, 고유 ID 5개, assignment oracle 8개, 모든 scenario의 Task/Owner/Status/Evidence oracle 존재, 공통 불변식 8개
+- 관측값: `goldset_schema=PASS`, `goldset_oracle=PASS`, negative schema 5개 거부, scenario 5개, 고유 ID 5개, assignment oracle 8개, 모든 scenario의 Task/Owner/Status/Evidence oracle 존재, 공통 불변식 8개
 - 시나리오: happy_path, missing_evidence, deadline_conflict, completion_without_file, version_conflict
 
 ### C-EVID-002 — 비밀정보 기준선
@@ -25,7 +25,7 @@
 - 입력: 공개·커밋 가능 작업 트리 표면과 전체 Git 이력; 로컬 `.env*`는 별도 ignore 여부만 검사
 - 절차: OpenAI/Discord token, Discord webhook, credential이 포함된 DATABASE_URL 고신뢰 패턴을 일치값이 아닌 파일명만 출력하도록 `--no-ignore` 검사하되 로컬 비밀 저장소 `.env*`와 의존성 폴더는 제외
 - 결과: PASS
-- 관측값: 공개 표면 후보 파일 0개, Git 이력 후보 파일 0개, unignored 로컬 env 파일 0개, `secret_scan=PASS`
+- 관측값: 공개 표면 후보 파일 0개, `.env.example` 후보 파일 0개(현재 파일 없음), Git 이력 후보 파일 0개, unignored 로컬 env 파일 0개, `secret_scan=PASS`
 
 ### C-EVID-003 — 환경 파일 ignore
 

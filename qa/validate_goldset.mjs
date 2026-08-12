@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
+import { validateJsonSchema } from "./json_schema_validator.mjs";
+
 const goldsetPath = new URL("../eval/goldset.json", import.meta.url);
 const schemaPath = new URL("../eval/goldset.schema.json", import.meta.url);
 
@@ -9,6 +11,8 @@ const [goldset, schema] = await Promise.all(
 );
 
 assert.equal(schema.$schema, "https://json-schema.org/draft/2020-12/schema");
+const schemaErrors = validateJsonSchema(goldset, schema);
+assert.deepEqual(schemaErrors, [], `goldset schema errors:\n${schemaErrors.join("\n")}`);
 assert.equal(goldset.schema_version, "1.0.0");
 assert.equal(goldset.spec_version, "Discord Goal Referee v3");
 assert.equal(goldset.maintainer_role, "C");
@@ -54,7 +58,22 @@ assert.deepEqual(completion.expected.task_progress[0].missing_required_files, ["
 const conflict = goldset.scenarios.find(({ name }) => name === "deadline_conflict");
 assert.ok(conflict.expected.assignments[0].blockers.includes("deadline_availability_conflict"));
 
+const negativeMutations = [
+  (draft) => { delete draft.scenarios[0].fixture_path; },
+  (draft) => { draft.scenarios.push(structuredClone(draft.scenarios[0])); },
+  (draft) => { draft.scenarios[0].expected.assignments[0].task_ref = "unknown:not_allowed"; },
+  (draft) => { draft.scenarios[0].expected.assignments[0].blockers = "not-an-array"; },
+  (draft) => { draft.scenarios[0].expected.assignments[0].evidence_refs = []; },
+];
+for (const mutate of negativeMutations) {
+  const invalid = structuredClone(goldset);
+  mutate(invalid);
+  assert.ok(validateJsonSchema(invalid, schema).length > 0, "negative schema mutation unexpectedly passed");
+}
+
+console.log("goldset_schema=PASS");
 console.log("goldset_oracle=PASS");
 console.log(`scenario_count=${goldset.scenarios.length}`);
 console.log(`assignment_count=${goldset.scenarios.flatMap(({ expected }) => expected.assignments).length}`);
 console.log(`global_expectations=${goldset.global_expectations.length}`);
+console.log(`negative_schema_cases=${negativeMutations.length}`);

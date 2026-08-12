@@ -13,6 +13,11 @@ $publicHits = @(
     --pcre2 $publicPattern . 2>$null
 )
 
+$envExampleHits = @()
+$envExampleHits = @(
+  rg -l --hidden --no-ignore --glob '**/.env.example' --pcre2 $publicPattern . 2>$null
+)
+
 $historyHits = @(
   git rev-list --all | ForEach-Object {
     git grep -I -l -E $historyPattern $_ 2>$null
@@ -32,10 +37,11 @@ Get-ChildItem -Force -File -Recurse | Where-Object {
 }
 
 Write-Output "public_surface_secret_candidate_files=$($publicHits.Count)"
+Write-Output "env_example_secret_candidate_files=$($envExampleHits.Count)"
 Write-Output "history_secret_candidate_files=$($historyHits.Count)"
 Write-Output "unignored_local_env_files=$($unignoredLocalEnvFiles.Count)"
 
-if ($publicHits.Count -gt 0 -or $historyHits.Count -gt 0 -or $unignoredLocalEnvFiles.Count -gt 0) {
+if ($publicHits.Count -gt 0 -or $envExampleHits.Count -gt 0 -or $historyHits.Count -gt 0 -or $unignoredLocalEnvFiles.Count -gt 0) {
   exit 1
 }
 

@@ -5,7 +5,7 @@ const [, , scenarioName, actualPath, stage = "before"] = process.argv;
 if (!scenarioName || !actualPath) {
   console.log("goldset_comparison=NOT_RUN");
   console.log("usage=node qa/compare_goldset_result.mjs <scenario> <actual.json> [before|after]");
-  process.exit(0);
+  process.exit(2);
 }
 assert.ok(["before", "after"].includes(stage), "stage must be before or after");
 
@@ -16,7 +16,7 @@ try {
 } catch {
   console.log("goldset_comparison=NOT_RUN");
   console.log("reason=fixtures/manifest.json is not available yet");
-  process.exit(0);
+  process.exit(2);
 }
 
 const [goldset, manifest, actual] = await Promise.all([
@@ -32,7 +32,9 @@ const bindings = manifestScenario.semantic_bindings ?? {};
 
 function idFor(ref) {
   assert.equal(typeof ref, "string", `cannot bind non-string ref: ${ref}`);
-  const id = bindings[ref];
+  const binding = bindings[ref];
+  assert.ok(binding && typeof binding === "object", `${scenarioName}: binding missing for ${ref}`);
+  const id = binding.id;
   assert.equal(typeof id, "string", `${scenarioName}: binding missing for ${ref}`);
   assert.ok(id.trim(), `${scenarioName}: ${ref} has an empty binding`);
   return id;
@@ -83,6 +85,22 @@ function compareAssignments() {
     }
     assert.equal(received.alternative_owner_id,
       expected.alternative_owner_ref == null ? null : idFor(expected.alternative_owner_ref));
+    for (const excludedRef of expected.excluded_owner_refs ?? []) {
+      assert.notEqual(received.owner_id, idFor(excludedRef), `${scenarioName}: excluded owner was assigned`);
+    }
+  }
+
+  if (oracle.expected.unassigned_task_refs) {
+    assert.deepEqual(sortedStrings(actual.unassigned, "unassigned"),
+      oracle.expected.unassigned_task_refs.map(idFor).sort());
+  }
+  if (oracle.expected.question_required) {
+    assert.ok(Array.isArray(actual.questions) && actual.questions.some((item) => typeof item === "string" && item.trim()),
+      `${scenarioName}: a clarification question is required`);
+  }
+  if (oracle.expected.auto_confirmed === false || oracle.expected.automatic_final_confirmation === false) {
+    assert.ok(actual.assignments.every(({ status }) => status !== "confirmed") || stage === "after",
+      `${scenarioName}: result was automatically confirmed`);
   }
 }
 
@@ -111,6 +129,15 @@ function compareProgress() {
         [...expected.missing_required_files].sort());
     }
   }
+  if (oracle.expected.done_100_allowed === false) {
+    assert.ok(actual.task_progress.every(({ state, percent }) => state !== "done" && percent !== 100),
+      `${scenarioName}: task reached done/100 despite a completion gate`);
+  }
+  if (oracle.expected.completion_confirmation_allowed === false) {
+    hasOwn(actual, "completion_confirmed");
+    assert.equal(actual.completion_confirmed, false,
+      `${scenarioName}: completion was confirmed despite missing evidence`);
+  }
 }
 
 function compareArtifacts() {
@@ -120,11 +147,18 @@ function compareArtifacts() {
     const received = actual.artifacts.find(({ id }) => id === idFor(expected.artifact_ref));
     assert.ok(received, `${scenarioName}: artifact missing for ${expected.artifact_ref}`);
     assert.equal(received.file_name, expected.file_name);
+    assert.equal(received.task_id, idFor(expected.task_ref));
+    assert.equal(received.version, expected.version);
     assert.equal(received.validation_status, expected.validation_status);
     assert.equal(received.is_latest_by_time, expected.is_latest_by_time);
     assert.equal(received.is_latest_valid, expected.is_latest_valid);
     assert.match(received.checksum, /^sha256:[0-9a-f]{64}$/);
   }
+  if (oracle.expected.latest_valid_artifact_ref) {
+    assert.equal(actual.latest_valid_artifact_id, idFor(oracle.expected.latest_valid_artifact_ref));
+  }
+  if (oracle.expected.task_state) assert.equal(actual.task_state, oracle.expected.task_state);
+  if (oracle.expected.next_action) assert.equal(actual.next_action, oracle.expected.next_action);
 }
 
 compareAssignments();

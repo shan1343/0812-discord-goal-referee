@@ -108,8 +108,10 @@ PowerShell에서 저장소 루트 기준으로 실행한다. 실제 secret 값�
 
 ```powershell
 node qa/validate_goldset.mjs
+# B manifest 병합 후 실행 — 없으면 NOT_RUN과 exit 2
 node qa/validate_fixture_bindings.mjs
-node qa/compare_goldset_result.mjs
+# A 결과 JSON과 B manifest 병합 후 scenario별 실행 — 입력 없으면 NOT_RUN과 exit 2
+node qa/compare_goldset_result.mjs <scenario> <actual.json> <before|after>
 powershell -NoProfile -ExecutionPolicy Bypass -File qa/secret_scan.ps1
 git check-ignore -v -- .env
 git status --short --branch
@@ -119,16 +121,19 @@ git status --short --branch
 
 ### 최신 로컬 실행
 
-- 실행 시각: `2026-08-12T14:26+09:00`
+- 실행 시각: `2026-08-12T14:27:42+09:00`
 - Tested ref: `5938b3206cb8ee3fa32cb0fe91c38c34ed60a178` + C 로컬 산출물
 - `goldset_oracle=PASS`
+- `goldset_schema=PASS`
 - `scenario_count=5`
 - `scenario_names=completion_without_file,deadline_conflict,happy_path,missing_evidence,version_conflict`
 - `assignment_count=8`
 - `global_expectations=8`
+- `negative_schema_cases=5`
 - `fixture_binding=NOT_RUN` — B manifest 없음
 - `goldset_comparison=NOT_RUN` — A 결과와 B manifest 없음
 - `public_surface_secret_candidate_files=0`
+- `env_example_secret_candidate_files=0`
 - `history_secret_candidate_files=0`
 - `unignored_local_env_files=0`
 - `secret_scan=PASS`

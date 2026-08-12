@@ -32,7 +32,7 @@ Discord 공식 문서 기준으로 bot token은 비밀번호처럼 취급하고 
 | SEC-RETENTION-01 | 기본 보존은 demo 세션 종료까지이며 기간을 설정 가능 | BLOCKED | 설정값, 만료 전후 storage 결과 |
 | SEC-FORGET-01 | 삭제 범위 미리보기와 관리자 확인 후 원문·프로젝트 삭제 | BLOCKED | `HITL-DELETE-01` 로그 |
 | SEC-ATTACH-01 | 개인정보 가능 첨부는 확인 전 다운로드·AI 전송하지 않음 | BLOCKED | fake downloader/model call count |
-| SEC-FALLBACK-01 | AI 실패 시 명시된 deterministic demo fallback | BLOCKED | timeout/401/429/5xx/invalid JSON 결과 |
+| SEC-FALLBACK-01 | AI 실패 시 명시된 deterministic demo fallback | BLOCKED | timeout/401/429/5xx/빈 응답/schema 불일치/존재하지 않는 ID 결과 |
 | SEC-AUDIT-01 | 위험 행동에 actor, time, scope, before/after, reason, confirmation ID 기록 | BLOCKED | redacted audit record |
 
 ## Discord 최소 권한

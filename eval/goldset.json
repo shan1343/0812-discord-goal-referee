@@ -24,7 +24,7 @@
       "test",
       "approval"
     ],
-    "fixture_manifest_requirement": "B manifest는 각 semantic_ref를 fixture 안의 실제 ID에 1:1로 연결해야 합니다.",
+    "fixture_manifest_requirement": "B manifest는 각 semantic_ref를 fixture 안의 실제 객체에 {id, kind, json_pointer}로 1:1 연결해야 합니다.",
     "finalization_rule": "C는 B fixture가 병합된 뒤 모든 semantic_ref를 실제 ID로 검증하고 status를 bound로 변경합니다.",
     "missing_binding_result": "NOT_RUN"
   },
@@ -335,7 +335,9 @@
         "artifacts": [
           {
             "artifact_ref": "attachment:demo_v1",
+            "task_ref": "task:versioned_demo",
             "file_name": "demo_v1.zip",
+            "version": "v1",
             "validation_status": "verified",
             "is_latest_by_time": false,
             "is_latest_valid": true,
@@ -343,7 +345,9 @@
           },
           {
             "artifact_ref": "attachment:demo_final",
+            "task_ref": "task:versioned_demo",
             "file_name": "demo_final.zip",
+            "version": "final",
             "validation_status": "checksum_mismatch",
             "is_latest_by_time": true,
             "is_latest_valid": false,
