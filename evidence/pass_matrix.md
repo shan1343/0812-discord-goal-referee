@@ -10,4 +10,4 @@
 | localhost smoke | PASS | Browser skill: seed→assign→confirm→progress/files, console error 0 |
 | 보안 검증 | 대기 | |
 | 사용자 3명 검증 | 대기 | |
-| HTTPS 배포 | 대기 | |
+| HTTPS 배포 | PASS | https://discord-goal-referee-0812.sanghyun1343590633.chatgpt.site |

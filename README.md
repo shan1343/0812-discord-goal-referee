@@ -36,3 +36,9 @@ pytest -q
 ```
 
 상세 개발 순서와 팀원이 개입하는 지점은 [README_PLAN.md](README_PLAN.md)를 참고하세요.
+
+## Deployed website
+
+https://discord-goal-referee-0812.sanghyun1343590633.chatgpt.site
+
+현재 배포본은 fixture 기반 웹 데모입니다. Discord API/Bot 연동은 별도 담당자가 연결합니다.
