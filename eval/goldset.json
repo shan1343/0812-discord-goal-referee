@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "cases": [
+    {"scenario": "happy_path", "expected": {"assigned_owner_count": 4, "human_confirmation_required": true}},
+    {"scenario": "missing_evidence", "expected": {"owner": null, "status": "needs_input"}},
+    {"scenario": "deadline_conflict", "expected": {"state": "blocked", "percent_max": 99}},
+    {"scenario": "completion_without_file", "expected": {"state": "review_pending", "percent_max": 99}},
+    {"scenario": "version_conflict", "expected": {"requires_confirmation": true, "auto_final": false}}
+  ]
+}

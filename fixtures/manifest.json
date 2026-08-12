@@ -1,0 +1,13 @@
+{
+  "fixture_version": "1.0",
+  "author": "B fixture owner",
+  "reviewer": "C eval owner",
+  "scenarios": [
+    "happy_path",
+    "missing_evidence",
+    "deadline_conflict",
+    "completion_without_file",
+    "version_conflict"
+  ],
+  "privacy": "synthetic-only"
+}

@@ -1,0 +1,10 @@
+{
+  "fixture_version": "1.0",
+  "scenario": "version_conflict",
+  "channel_id": "project-room",
+  "messages": [
+    {"id": "1300", "author": "도윤", "created_at": "2026-08-12T13:00:00+09:00", "content": "demo_v1.zip을 올렸어.", "attachment": "demo_v1.zip"},
+    {"id": "1301", "author": "서연", "created_at": "2026-08-12T13:01:00+09:00", "content": "demo_final.zip도 있는데 테스트 여부는 확인이 필요해.", "attachment": "demo_final.zip"},
+    {"id": "1302", "author": "유나", "created_at": "2026-08-12T13:02:00+09:00", "content": "/files"}
+  ]
+}

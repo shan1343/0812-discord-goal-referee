@@ -1,0 +1,10 @@
+{
+  "fixture_version": "1.0",
+  "scenario": "completion_without_file",
+  "channel_id": "project-room",
+  "messages": [
+    {"id": "1200", "author": "도윤", "created_at": "2026-08-12T12:00:00+09:00", "content": "Bot 작업 완료했어."},
+    {"id": "1201", "author": "유나", "created_at": "2026-08-12T12:01:00+09:00", "content": "필수 빌드 파일과 보안 테스트 결과는 아직 없어."},
+    {"id": "1202", "author": "유나", "created_at": "2026-08-12T12:02:00+09:00", "content": "/progress"}
+  ]
+}

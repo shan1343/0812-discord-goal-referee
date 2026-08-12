@@ -1,0 +1,9 @@
+{
+  "fixture_version": "1.0",
+  "scenario": "missing_evidence",
+  "channel_id": "project-room",
+  "messages": [
+    {"id": "1000", "author": "유나", "created_at": "2026-08-12T10:00:00+09:00", "content": "제출 카피 최종 검수가 필요해."},
+    {"id": "1001", "author": "유나", "created_at": "2026-08-12T10:01:00+09:00", "content": "/assign"}
+  ]
+}
