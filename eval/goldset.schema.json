@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shan1343/0812-discord-goal-referee/eval/goldset.schema.json",
+  "title": "Discord Goal Referee v3 C goldset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "spec_version",
+    "fixture_version",
+    "maintainer_role",
+    "created_at",
+    "status",
+    "status_reason",
+    "authority",
+    "binding_contract",
+    "required_output_fields",
+    "global_expectations",
+    "scenarios"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "spec_version": { "const": "Discord Goal Referee v3" },
+    "fixture_version": { "type": "string", "minLength": 1 },
+    "maintainer_role": { "const": "C" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "status": {
+      "enum": ["draft_pending_fixture_binding", "bound"]
+    },
+    "status_reason": { "type": "string", "minLength": 1 },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "context_only"],
+      "properties": {
+        "primary": { "const": "0단계_4인팀_Discord_개발실행_v3.txt" },
+        "context_only": { "const": "0단계_4인개발_역할분담_v2.txt" }
+      }
+    },
+    "binding_contract": { "type": "object" },
+    "required_output_fields": { "type": "object" },
+    "global_expectations": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "rule"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^GLOBAL-[A-Z-]+$" },
+          "rule": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/scenario" }
+    }
+  },
+  "$defs": {
+    "semanticRef": {
+      "type": "string",
+      "pattern": "^(goal|task|member|message|attachment|link|checkpoint|test|approval):[a-z0-9_:-]+$"
+    },
+    "assignment": {
+      "type": "object",
+      "required": [
+        "task_ref",
+        "owner_ref",
+        "status_before_confirmation",
+        "status_after_confirmation",
+        "reason_required",
+        "reason_must_reference_evidence_or_user_input",
+        "evidence_refs",
+        "confidence",
+        "blockers",
+        "alternative_owner_ref",
+        "alternative_owner_field_required"
+      ],
+      "properties": {
+        "task_ref": { "$ref": "#/$defs/semanticRef" },
+        "owner_ref": {
+          "oneOf": [
+            { "$ref": "#/$defs/semanticRef" },
+            { "type": "null" }
+          ]
+        },
+        "status_before_confirmation": { "enum": ["proposed", "needs_input"] },
+        "status_after_confirmation": { "enum": ["confirmed", "needs_input"] },
+        "reason_required": { "const": true },
+        "reason_must_reference_evidence_or_user_input": { "type": "boolean" },
+        "reason_code": { "type": "string", "minLength": 1 },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/semanticRef" }
+        },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "blockers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "alternative_owner_ref": {
+          "oneOf": [
+            { "$ref": "#/$defs/semanticRef" },
+            { "type": "null" }
+          ]
+        },
+        "alternative_owner_field_required": { "const": true },
+        "excluded_owner_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/semanticRef" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "owner_ref": { "type": "null" } } },
+          "then": {
+            "properties": {
+              "status_before_confirmation": { "const": "needs_input" },
+              "status_after_confirmation": { "const": "needs_input" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "reason_must_reference_evidence_or_user_input": { "const": true }
+            }
+          },
+          "then": {
+            "properties": { "evidence_refs": { "minItems": 1 } }
+          }
+        }
+      ]
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "fixture_path",
+        "binding_status",
+        "fixture_requirements",
+        "expected"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^GOLD-0[1-5]$" },
+        "name": {
+          "enum": [
+            "happy_path",
+            "missing_evidence",
+            "deadline_conflict",
+            "completion_without_file",
+            "version_conflict"
+          ]
+        },
+        "fixture_path": {
+          "type": "string",
+          "pattern": "^fixtures/conversations/[a-z_]+\\.json$"
+        },
+        "binding_status": { "enum": ["pending_b_fixture", "bound"] },
+        "fixture_requirements": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "expected": {
+          "type": "object",
+          "required": ["assignments"],
+          "properties": {
+            "assignments": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/assignment" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
