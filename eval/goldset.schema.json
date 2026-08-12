@@ -1,0 +1,309 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shan1343/0812-discord-goal-referee/eval/goldset.schema.json",
+  "title": "Discord Goal Referee v3 C goldset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "spec_version",
+    "fixture_version",
+    "maintainer_role",
+    "created_at",
+    "status",
+    "status_reason",
+    "authority",
+    "binding_contract",
+    "required_output_fields",
+    "global_expectations",
+    "scenarios"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "spec_version": { "const": "Discord Goal Referee v3" },
+    "fixture_version": { "type": "string", "minLength": 1 },
+    "maintainer_role": { "const": "C" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "status": {
+      "enum": ["draft_pending_fixture_binding", "bound"]
+    },
+    "status_reason": { "type": "string", "minLength": 1 },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "context_only"],
+      "properties": {
+        "primary": { "const": "0단계_4인팀_Discord_개발실행_v3.txt" },
+        "context_only": { "const": "0단계_4인개발_역할분담_v2.txt" }
+      }
+    },
+    "binding_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "reference_format",
+        "allowed_kinds",
+        "fixture_manifest_requirement",
+        "finalization_rule",
+        "missing_binding_result"
+      ],
+      "properties": {
+        "mode": { "const": "semantic_ref_v1" },
+        "reference_format": { "type": "string", "minLength": 1 },
+        "allowed_kinds": {
+          "type": "array",
+          "minItems": 9,
+          "uniqueItems": true,
+          "items": { "enum": ["goal", "task", "member", "message", "attachment", "link", "checkpoint", "test", "approval"] }
+        },
+        "fixture_manifest_requirement": { "type": "string", "minLength": 1 },
+        "finalization_rule": { "type": "string", "minLength": 1 },
+        "missing_binding_result": { "const": "NOT_RUN" }
+      }
+    },
+    "required_output_fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assignment", "progress", "artifact"],
+      "properties": {
+        "assignment": {
+          "type": "array",
+          "const": ["task_id", "owner_id", "reason", "evidence_ids", "confidence", "blockers", "alternative_owner_id", "status"]
+        },
+        "progress": {
+          "type": "array",
+          "const": ["task_id", "state", "percent", "evidence_ids", "blocker", "next_action"]
+        },
+        "artifact": {
+          "type": "array",
+          "const": ["task_id", "file_name", "version", "checksum", "validation_status"]
+        }
+      }
+    },
+    "global_expectations": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "rule"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^GLOBAL-[A-Z-]+$" },
+          "rule": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/scenario" }
+    }
+  },
+  "$defs": {
+    "semanticRef": {
+      "type": "string",
+      "pattern": "^(goal|task|member|message|attachment|link|checkpoint|test|approval):[a-z0-9_:-]+$"
+    },
+    "assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_ref",
+        "owner_ref",
+        "status_before_confirmation",
+        "status_after_confirmation",
+        "reason_required",
+        "reason_must_reference_evidence_or_user_input",
+        "evidence_refs",
+        "confidence",
+        "blockers",
+        "alternative_owner_ref",
+        "alternative_owner_field_required"
+      ],
+      "properties": {
+        "task_ref": { "type": "string", "pattern": "^task:[a-z0-9_:-]+$" },
+        "owner_ref": {
+          "oneOf": [
+            { "type": "string", "pattern": "^member:[a-z0-9_:-]+$" },
+            { "type": "null" }
+          ]
+        },
+        "status_before_confirmation": { "enum": ["proposed", "needs_input"] },
+        "status_after_confirmation": { "enum": ["confirmed", "needs_input"] },
+        "reason_required": { "const": true },
+        "reason_must_reference_evidence_or_user_input": { "type": "boolean" },
+        "reason_code": { "type": "string", "minLength": 1 },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(message|attachment|link|checkpoint|test|approval):[a-z0-9_:-]+$" }
+        },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "blockers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "alternative_owner_ref": {
+          "oneOf": [
+            { "type": "string", "pattern": "^member:[a-z0-9_:-]+$" },
+            { "type": "null" }
+          ]
+        },
+        "alternative_owner_field_required": { "const": true },
+        "excluded_owner_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^member:[a-z0-9_:-]+$" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "owner_ref": { "type": "null" } } },
+          "then": {
+            "properties": {
+              "status_before_confirmation": { "const": "needs_input" },
+              "status_after_confirmation": { "const": "needs_input" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "reason_must_reference_evidence_or_user_input": { "const": true }
+            }
+          },
+          "then": {
+            "properties": { "evidence_refs": { "minItems": 1 } }
+          }
+        }
+      ]
+    },
+    "taskProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_ref", "state", "percent_range", "evidence_refs", "missing_required_files", "blocker", "next_action_required"],
+      "properties": {
+        "task_ref": { "type": "string", "pattern": "^task:[a-z0-9_:-]+$" },
+        "state": { "enum": ["not_started", "in_progress", "review_pending", "blocked", "done", "unknown"] },
+        "percent_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min_inclusive", "max_inclusive"],
+          "properties": {
+            "min_inclusive": { "type": "number", "minimum": 0, "maximum": 100 },
+            "max_inclusive": { "type": "number", "minimum": 0, "maximum": 100 }
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(message|attachment|link|checkpoint|test|approval):[a-z0-9_:-]+$" }
+        },
+        "missing_required_files": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "blocker": { "type": "string", "minLength": 1 },
+        "next_action_required": { "const": true }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_ref", "task_ref", "file_name", "version", "validation_status", "is_latest_by_time", "is_latest_valid", "checksum_required"],
+      "properties": {
+        "artifact_ref": { "type": "string", "pattern": "^attachment:[a-z0-9_:-]+$" },
+        "task_ref": { "type": "string", "pattern": "^task:[a-z0-9_:-]+$" },
+        "file_name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "validation_status": { "type": "string", "minLength": 1 },
+        "is_latest_by_time": { "type": "boolean" },
+        "is_latest_valid": { "type": "boolean" },
+        "checksum_required": { "type": "boolean" },
+        "source_message_ref": { "type": "string", "pattern": "^message:[a-z0-9_:-]+$" }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "json_pointer", "kind", "id", "expected_value"],
+      "properties": {
+        "source": { "enum": ["fixture", "manifest"] },
+        "json_pointer": { "type": "string", "pattern": "^/" },
+        "kind": { "enum": ["goal", "task", "member", "message", "attachment", "link", "checkpoint", "test", "approval"] },
+        "id": { "type": "string", "minLength": 1 },
+        "expected_value": { "type": ["string", "number", "boolean", "null"] }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assignments"],
+      "properties": {
+        "goal_ref": { "type": "string", "pattern": "^goal:[a-z0-9_:-]+$" },
+        "assignments": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/assignment" } },
+        "unassigned_task_refs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^task:[a-z0-9_:-]+$" } },
+        "auto_confirmed": { "type": "boolean" },
+        "question_required": { "type": "boolean" },
+        "forbidden_owner_sources": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "conflict_must_be_visible": { "type": "boolean" },
+        "forbidden_result": { "type": "string", "minLength": 1 },
+        "task_progress": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/taskProgress" } },
+        "done_100_allowed": { "type": "boolean" },
+        "completion_confirmation_allowed": { "type": "boolean" },
+        "artifacts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/artifact" } },
+        "latest_valid_artifact_ref": {
+          "oneOf": [
+            { "type": "string", "pattern": "^attachment:[a-z0-9_:-]+$" },
+            { "type": "null" }
+          ]
+        },
+        "filename_alone_must_not_decide": { "type": "boolean" },
+        "automatic_final_confirmation": { "type": "boolean" },
+        "task_state": { "enum": ["not_started", "in_progress", "review_pending", "blocked", "done", "unknown"] },
+        "next_action": { "type": "string", "minLength": 1 }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "fixture_path",
+        "binding_status",
+        "fixture_requirements",
+        "expected"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^GOLD-0[1-5]$" },
+        "name": {
+          "enum": [
+            "happy_path",
+            "missing_evidence",
+            "deadline_conflict",
+            "completion_without_file",
+            "version_conflict"
+          ]
+        },
+        "fixture_path": {
+          "type": "string",
+          "pattern": "^fixtures/conversations/[a-z_]+\\.json$"
+        },
+        "binding_status": { "enum": ["pending_b_fixture", "bound"] },
+        "bindings": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/binding" }
+        },
+        "fixture_requirements": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "expected": { "$ref": "#/$defs/expected" }
+      }
+    }
+  }
+}

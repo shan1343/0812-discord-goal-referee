@@ -1,10 +1,409 @@
 {
-  "version": "1.0",
-  "cases": [
-    {"scenario": "happy_path", "expected": {"assigned_owner_count": 4, "human_confirmation_required": true}},
-    {"scenario": "missing_evidence", "expected": {"owner": null, "status": "needs_input"}},
-    {"scenario": "deadline_conflict", "expected": {"state": "blocked", "percent_max": 99}},
-    {"scenario": "completion_without_file", "expected": {"state": "review_pending", "percent_max": 99}},
-    {"scenario": "version_conflict", "expected": {"requires_confirmation": true, "auto_final": false}}
+  "schema_version": "1.0.0",
+  "spec_version": "Discord Goal Referee v3",
+  "fixture_version": "1.1",
+  "maintainer_role": "C",
+  "created_at": "2026-08-12T13:59:50+09:00",
+  "status": "bound",
+  "status_reason": "B manifest 1.1의 5개 경로와 실제 fixture/manifest 값을 C bindings로 검증했습니다. 개별 fixture_version 1.0과 1.1은 collection version과 별도로 기록합니다.",
+  "authority": {
+    "primary": "0단계_4인팀_Discord_개발실행_v3.txt",
+    "context_only": "0단계_4인개발_역할분담_v2.txt"
+  },
+  "binding_contract": {
+    "mode": "semantic_ref_v1",
+    "reference_format": "<kind>:<stable_alias>",
+    "allowed_kinds": [
+      "goal",
+      "task",
+      "member",
+      "message",
+      "attachment",
+      "link",
+      "checkpoint",
+      "test",
+      "approval"
+    ],
+    "fixture_manifest_requirement": "C bindings는 각 semantic_ref를 B fixture 또는 manifest의 실제 scalar 값에 {source, json_pointer, kind, id, expected_value}로 연결합니다.",
+    "finalization_rule": "각 pointer의 실제 값, scenario 경로, message ID, fixture version을 validator로 검증한 경우에만 status를 bound로 둡니다.",
+    "missing_binding_result": "NOT_RUN"
+  },
+  "required_output_fields": {
+    "assignment": [
+      "task_id",
+      "owner_id",
+      "reason",
+      "evidence_ids",
+      "confidence",
+      "blockers",
+      "alternative_owner_id",
+      "status"
+    ],
+    "progress": [
+      "task_id",
+      "state",
+      "percent",
+      "evidence_ids",
+      "blocker",
+      "next_action"
+    ],
+    "artifact": [
+      "task_id",
+      "file_name",
+      "version",
+      "checksum",
+      "validation_status"
+    ]
+  },
+  "global_expectations": [
+    {
+      "id": "GLOBAL-OWNER-EVIDENCE",
+      "rule": "직접 근거가 없으면 owner_id는 null이고 status는 needs_input이다."
+    },
+    {
+      "id": "GLOBAL-NO-AUTO-CONFIRM",
+      "rule": "AI 결과는 proposed 또는 needs_input이며 사람 확인 전 confirmed가 될 수 없다."
+    },
+    {
+      "id": "GLOBAL-NO-MESSAGE-VOLUME",
+      "rule": "메시지 개수, 길이, 말투, 이모지, 응답 속도는 배정과 진행률에 영향을 주지 않는다."
+    },
+    {
+      "id": "GLOBAL-DONE-GATE",
+      "rule": "모든 필수 체크포인트, 파일, 테스트, 사람 승인이 충족되어야 done 100%이다."
+    },
+    {
+      "id": "GLOBAL-ALLOWLIST",
+      "rule": "허용 채널 밖의 메시지는 저장하거나 분석하지 않는다."
+    },
+    {
+      "id": "GLOBAL-HUMAN-CONFIRM",
+      "rule": "배정·완료 확정, 재배정, 외부 전송, 삭제, 마감 변경, 개인정보 가능 첨부 분석은 사람 확인 전 실행하지 않는다."
+    },
+    {
+      "id": "GLOBAL-REASON",
+      "rule": "owner가 있는 모든 배정의 reason은 비어 있지 않고 최소 한 개의 직접 evidence_id 또는 명시적 user_input을 가리킨다."
+    },
+    {
+      "id": "GLOBAL-CARD-FIELDS",
+      "rule": "각 배정 결과는 confidence, blockers, alternative_owner_id 필드를 값이 null 또는 빈 배열이어도 생략하지 않는다."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "GOLD-01",
+      "name": "happy_path",
+      "fixture_path": "fixtures/conversations/happy_path.json",
+      "binding_status": "bound",
+      "fixture_requirements": [
+        "네 명의 역할 약속이 직접 표현되어 있다.",
+        "각 역할 약속에는 서로 다른 메시지 ID가 있다.",
+        "fixture 역할에는 첨부파일 근거가 있다.",
+        "@GoalReferee 역할 나눠줘 호출이 포함되어 있다."
+      ],
+      "bindings": {
+        "goal:discord_demo": {"source": "fixture", "json_pointer": "/messages/0/id", "kind": "goal", "id": "goal-happy-discord-demo", "expected_value": "0900"},
+        "task:build_and_deploy": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/0/task", "kind": "task", "id": "task-happy-build-deploy", "expected_value": "Discord Bot, GitHub 연동과 배포"},
+        "member:developer": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/0/owner", "kind": "member", "id": "member-doyun", "expected_value": "도윤"},
+        "message:developer_commitment": {"source": "fixture", "json_pointer": "/messages/1/id", "kind": "message", "id": "0902", "expected_value": "0902"},
+        "task:fixture_authoring": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/1/task", "kind": "task", "id": "task-happy-fixture-authoring", "expected_value": "fixture와 가짜 파일"},
+        "member:fixture_owner": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/1/owner", "kind": "member", "id": "member-seoyeon", "expected_value": "서연"},
+        "message:fixture_commitment": {"source": "fixture", "json_pointer": "/messages/2/id", "kind": "message", "id": "0903", "expected_value": "0903"},
+        "attachment:fixture_sample": {"source": "fixture", "json_pointer": "/messages/6/attachments/0", "kind": "attachment", "id": "attachment-discord-happy-path-v1", "expected_value": "discord_happy_path_v1.json"},
+        "task:goldset_and_security": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/2/task", "kind": "task", "id": "task-happy-goldset-security", "expected_value": "정답셋과 보안 공격 테스트"},
+        "member:qa_owner": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/2/owner", "kind": "member", "id": "member-minjae", "expected_value": "민재"},
+        "message:qa_commitment": {"source": "fixture", "json_pointer": "/messages/3/id", "kind": "message", "id": "0904", "expected_value": "0904"},
+        "task:user_test_and_demo": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/3/task", "kind": "task", "id": "task-happy-user-demo", "expected_value": "사용자 테스트와 발표 증거표"},
+        "member:demo_owner": {"source": "fixture", "json_pointer": "/expected_outcome/assignments/3/owner", "kind": "member", "id": "member-yuna", "expected_value": "유나"},
+        "message:demo_commitment": {"source": "fixture", "json_pointer": "/messages/4/id", "kind": "message", "id": "0905", "expected_value": "0905"}
+      },
+      "expected": {
+        "goal_ref": "goal:discord_demo",
+        "assignments": [
+          {
+            "task_ref": "task:build_and_deploy",
+            "owner_ref": "member:developer",
+            "status_before_confirmation": "proposed",
+            "status_after_confirmation": "confirmed",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": true,
+            "evidence_refs": [
+              "message:developer_commitment"
+            ],
+            "confidence": "high",
+            "blockers": [],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          },
+          {
+            "task_ref": "task:fixture_authoring",
+            "owner_ref": "member:fixture_owner",
+            "status_before_confirmation": "proposed",
+            "status_after_confirmation": "confirmed",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": true,
+            "evidence_refs": [
+              "message:fixture_commitment",
+              "attachment:fixture_sample"
+            ],
+            "confidence": "high",
+            "blockers": [],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          },
+          {
+            "task_ref": "task:goldset_and_security",
+            "owner_ref": "member:qa_owner",
+            "status_before_confirmation": "proposed",
+            "status_after_confirmation": "confirmed",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": true,
+            "evidence_refs": [
+              "message:qa_commitment"
+            ],
+            "confidence": "high",
+            "blockers": [],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          },
+          {
+            "task_ref": "task:user_test_and_demo",
+            "owner_ref": "member:demo_owner",
+            "status_before_confirmation": "proposed",
+            "status_after_confirmation": "confirmed",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": true,
+            "evidence_refs": [
+              "message:demo_commitment"
+            ],
+            "confidence": "high",
+            "blockers": [],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          }
+        ],
+        "unassigned_task_refs": [],
+        "auto_confirmed": false
+      }
+    },
+    {
+      "id": "GOLD-02",
+      "name": "missing_evidence",
+      "fixture_path": "fixtures/conversations/missing_evidence.json",
+      "binding_status": "bound",
+      "fixture_requirements": [
+        "제출 카피 최종 검수 Task에 대해 담당하겠다는 직접 근거가 없다.",
+        "'내가 다 할게'라는 포괄적 문장은 존재하지만 특정 Task 근거로 주석되지 않는다.",
+        "근거 부족 이유와 needs_input 기대 결과가 fixture에 명시되어 있다."
+      ],
+      "bindings": {
+        "task:unbacked_task": {"source": "fixture", "json_pointer": "/expected_outcome/task", "kind": "task", "id": "task-missing-copy-review", "expected_value": "제출 카피 최종 검수"}
+      },
+      "expected": {
+        "assignments": [
+          {
+            "task_ref": "task:unbacked_task",
+            "owner_ref": null,
+            "status_before_confirmation": "needs_input",
+            "status_after_confirmation": "needs_input",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": false,
+            "reason_code": "insufficient_direct_evidence",
+            "evidence_refs": [],
+            "confidence": "low",
+            "blockers": [
+              "담당 근거 부족"
+            ],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          }
+        ],
+        "unassigned_task_refs": [
+          "task:unbacked_task"
+        ],
+        "question_required": true,
+        "forbidden_owner_sources": [
+          "message_count",
+          "tone",
+          "response_speed",
+          "blanket_offer_without_task_binding"
+        ]
+      }
+    },
+    {
+      "id": "GOLD-03",
+      "name": "deadline_conflict",
+      "fixture_path": "fixtures/conversations/deadline_conflict.json",
+      "binding_status": "bound",
+      "fixture_requirements": [
+        "Task 마감과 후보자의 실시간 검토 불가 시각이 모두 14:00로 겹친다.",
+        "마감과 가용시간 제약이 각각 ID가 있는 메시지로 명시된다.",
+        "다른 유효 후보를 확정할 직접 근거는 없다."
+      ],
+      "bindings": {
+        "task:deadline_sensitive_task": {"source": "fixture", "json_pointer": "/messages/1/content", "kind": "task", "id": "task-deadline-security-review", "expected_value": "보안 검토 마감은 14시야."},
+        "member:conflicted_candidate": {"source": "fixture", "json_pointer": "/messages/0/author", "kind": "member", "id": "member-minjae", "expected_value": "민재"},
+        "message:availability_conflict": {"source": "fixture", "json_pointer": "/messages/0/id", "kind": "message", "id": "1100", "expected_value": "1100"},
+        "message:task_deadline": {"source": "fixture", "json_pointer": "/messages/1/id", "kind": "message", "id": "1101", "expected_value": "1101"}
+      },
+      "expected": {
+        "assignments": [
+          {
+            "task_ref": "task:deadline_sensitive_task",
+            "owner_ref": null,
+            "excluded_owner_refs": [
+              "member:conflicted_candidate"
+            ],
+            "status_before_confirmation": "needs_input",
+            "status_after_confirmation": "needs_input",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": true,
+            "evidence_refs": [
+              "message:task_deadline",
+              "message:availability_conflict"
+            ],
+            "confidence": "low",
+            "blockers": [
+              "deadline_availability_conflict"
+            ],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          }
+        ],
+        "question_required": true,
+        "conflict_must_be_visible": true,
+        "forbidden_result": "member:conflicted_candidate를 blocker 없이 owner로 제안"
+      }
+    },
+    {
+      "id": "GOLD-04",
+      "name": "completion_without_file",
+      "fixture_path": "fixtures/conversations/completion_without_file.json",
+      "binding_status": "bound",
+      "fixture_requirements": [
+        "완료 선언 메시지가 있다.",
+        "Task의 필수 빌드 파일과 보안 테스트 결과가 정의되어 있다.",
+        "필수 파일·테스트 결과·사람 승인이 없다고 명시되어 있다.",
+        "명시적인 담당 약속은 없어 배정 owner는 null로 유지한다."
+      ],
+      "bindings": {
+        "task:deliverable_task": {"source": "fixture", "json_pointer": "/expected_outcome/task", "kind": "task", "id": "task-completion-bot", "expected_value": "Bot 작업"},
+        "message:completion_requirements": {"source": "fixture", "json_pointer": "/messages/0/id", "kind": "message", "id": "1200", "expected_value": "1200"},
+        "message:completion_claim": {"source": "fixture", "json_pointer": "/messages/1/id", "kind": "message", "id": "1201", "expected_value": "1201"},
+        "message:missing_evidence_report": {"source": "fixture", "json_pointer": "/messages/2/id", "kind": "message", "id": "1202", "expected_value": "1202"}
+      },
+      "expected": {
+        "assignments": [
+          {
+            "task_ref": "task:deliverable_task",
+            "owner_ref": null,
+            "status_before_confirmation": "needs_input",
+            "status_after_confirmation": "needs_input",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": false,
+            "reason_code": "insufficient_direct_owner_evidence",
+            "evidence_refs": [],
+            "confidence": "low",
+            "blockers": [
+              "담당 근거 부족"
+            ],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          }
+        ],
+        "task_progress": [
+          {
+            "task_ref": "task:deliverable_task",
+            "state": "review_pending",
+            "percent_range": {
+              "min_inclusive": 80,
+              "max_inclusive": 99
+            },
+            "evidence_refs": [
+              "message:completion_requirements",
+              "message:completion_claim",
+              "message:missing_evidence_report"
+            ],
+            "missing_required_files": [
+              "빌드 파일",
+              "보안 테스트 결과"
+            ],
+            "blocker": "필수 파일·테스트·사람 승인 누락",
+            "next_action_required": true
+          }
+        ],
+        "done_100_allowed": false,
+        "completion_confirmation_allowed": false
+      }
+    },
+    {
+      "id": "GOLD-05",
+      "name": "version_conflict",
+      "fixture_path": "fixtures/conversations/version_conflict.json",
+      "binding_status": "bound",
+      "fixture_requirements": [
+        "demo_v1.zip과 demo_final.zip 업로드 메시지 ID가 있다.",
+        "manifest에는 v1=superseded, final 후보=pending_smoke_test로 기록되어 있다.",
+        "checksum이 없어 어느 파일도 최신 유효본으로 자동 확정할 수 없다.",
+        "명시적인 담당 약속은 없어 배정 owner는 null로 유지한다."
+      ],
+      "bindings": {
+        "task:versioned_demo": {"source": "manifest", "json_pointer": "/artifact_manifest/3/task", "kind": "task", "id": "task-versioned-demo", "expected_value": "배포용 데모 파일"},
+        "attachment:demo_v1": {"source": "manifest", "json_pointer": "/artifact_manifest/3/file_name", "kind": "attachment", "id": "artifact-demo-v1", "expected_value": "demo_v1.zip"},
+        "attachment:demo_final": {"source": "manifest", "json_pointer": "/artifact_manifest/4/file_name", "kind": "attachment", "id": "artifact-demo-final", "expected_value": "demo_final.zip"},
+        "message:demo_v1_upload": {"source": "fixture", "json_pointer": "/messages/0/id", "kind": "message", "id": "1300", "expected_value": "1300"},
+        "message:demo_final_upload": {"source": "fixture", "json_pointer": "/messages/1/id", "kind": "message", "id": "1301", "expected_value": "1301"}
+      },
+      "expected": {
+        "assignments": [
+          {
+            "task_ref": "task:versioned_demo",
+            "owner_ref": null,
+            "status_before_confirmation": "needs_input",
+            "status_after_confirmation": "needs_input",
+            "reason_required": true,
+            "reason_must_reference_evidence_or_user_input": false,
+            "reason_code": "insufficient_direct_owner_evidence",
+            "evidence_refs": [],
+            "confidence": "low",
+            "blockers": [
+              "담당 근거 부족"
+            ],
+            "alternative_owner_ref": null,
+            "alternative_owner_field_required": true
+          }
+        ],
+        "artifacts": [
+          {
+            "artifact_ref": "attachment:demo_v1",
+            "task_ref": "task:versioned_demo",
+            "file_name": "demo_v1.zip",
+            "version": "v1",
+            "validation_status": "superseded",
+            "is_latest_by_time": false,
+            "is_latest_valid": false,
+            "checksum_required": false,
+            "source_message_ref": "message:demo_v1_upload"
+          },
+          {
+            "artifact_ref": "attachment:demo_final",
+            "task_ref": "task:versioned_demo",
+            "file_name": "demo_final.zip",
+            "version": "candidate-final",
+            "validation_status": "pending_smoke_test",
+            "is_latest_by_time": true,
+            "is_latest_valid": false,
+            "checksum_required": false,
+            "source_message_ref": "message:demo_final_upload"
+          }
+        ],
+        "latest_valid_artifact_ref": null,
+        "filename_alone_must_not_decide": true,
+        "automatic_final_confirmation": false,
+        "task_state": "review_pending",
+        "next_action": "demo_final.zip의 checksum과 smoke test를 검증한 뒤 사람이 유효본을 확인",
+        "question_required": true
+      }
+    }
   ]
 }
