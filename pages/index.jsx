@@ -31,7 +31,7 @@ export default function Home() {
   const confirm = (id) => setAssignments((items) => items.map((item) => item.id === id ? { ...item, status: "confirmed" } : item));
 
   return <>
-    <Head><title>Discord Goal Referee</title><meta name="description" content="Evidence-based project coordination for Discord teams" /></Head>
+    <Head><title>Discord Goal Referee</title><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="description" content="Evidence-based project coordination for Discord teams" /></Head>
     <main>
       <nav><div className="brand"><span className="mark">GR</span><span>Goal Referee</span></div><div className="live"><i /> Fixture fallback ready</div></nav>
       <header>
