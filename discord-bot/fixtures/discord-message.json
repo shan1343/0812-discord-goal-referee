@@ -1,0 +1,22 @@
+{
+  "id": "150123456789012345",
+  "guildId": "150000000000000001",
+  "channelId": "150000000000000002",
+  "content": "발표 자료 초안을 오늘 16시까지 올릴게요.",
+  "createdAt": "2026-08-12T03:05:00.000Z",
+  "author": {
+    "id": "150000000000000003",
+    "username": "minji",
+    "globalName": "민지",
+    "bot": false
+  },
+  "attachments": [
+    {
+      "id": "150000000000000004",
+      "name": "outline.pdf",
+      "url": "https://cdn.discordapp.com/attachments/example/outline.pdf",
+      "contentType": "application/pdf",
+      "size": 2048
+    }
+  ]
+}

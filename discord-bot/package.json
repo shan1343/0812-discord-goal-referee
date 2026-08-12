@@ -1,0 +1,23 @@
+{
+  "name": "team-readiness-discord-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Source-traceable Discord role assignment and progress bot",
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=../.env src/app/index.js",
+    "dev": "node --watch --env-file-if-exists=../.env src/app/index.js",
+    "register": "node --env-file-if-exists=../.env src/discord/register-commands.js",
+    "demo": "node src/app/demo.js",
+    "test": "node --test --test-concurrency=1",
+    "check": "npm test && npm run demo"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "discord.js": "^14.22.1",
+    "openai": "^5.12.2"
+  }
+}
