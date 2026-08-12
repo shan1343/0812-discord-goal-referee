@@ -1,39 +1,95 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-const messages = [
-  { id: "1001", time: "09:51", author: "예린", text: "강의실 데이터 구조와 샘플 데이터는 내가 오늘 저녁까지 정리할게" },
-  { id: "1002", time: "09:59", author: "민재", text: "FastAPI로 /rooms, /available-rooms API는 내가 맡을게" },
-  { id: "1003", time: "10:20", author: "현우", text: "검색 화면 프로토타입은 내가 화요일 저녁까지 1차 완료할게" },
-  { id: "1004", time: "10:17", author: "예린", text: "5분 발표 자료 초안은 내가 만들게" },
-  { id: "1005", time: "10:10", author: "지수", text: "사용자 테스트도 해야 하지 않을까?" },
-];
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
 
-const base = [
-  { id: "data", task: "강의실 데이터 구조·샘플 데이터", owner: "예린", reason: "데이터 구조와 샘플 데이터를 직접 정리하겠다고 명시했습니다.", evidence: "[09:51] 예린 · 강의실 데이터 구조와 샘플 데이터는 내가 오늘 저녁까지 정리할게", deadline: "오늘 저녁", status: "proposed" },
-  { id: "backend", task: "FastAPI 기반 강의실 API", owner: "민재", reason: "FastAPI API 경로를 맡겠다고 명시했습니다.", evidence: "[09:59] 민재 · FastAPI로 /rooms, /available-rooms API는 내가 맡을게", deadline: "수요일 저녁", status: "proposed" },
-  { id: "frontend", task: "검색 화면 프로토타입", owner: "현우", reason: "검색 화면 프로토타입의 1차 완료를 명시했습니다.", evidence: "[10:20] 현우 · 검색 화면 프로토타입은 내가 화요일 저녁까지 1차 완료할게", deadline: "화요일 저녁", status: "proposed" },
-  { id: "slides", task: "5분 발표 자료", owner: "예린", reason: "발표 자료 초안을 만들겠다고 명시했습니다.", evidence: "[10:17] 예린 · 5분 발표 자료 초안은 내가 만들게", deadline: "목요일 밤", status: "proposed" },
-  { id: "test", task: "사용자 테스트 설계", owner: null, reason: "필요성은 언급되었지만, 맡겠다는 명시적 약속은 없습니다.", evidence: "추가 입력 필요", deadline: "목요일 16:00", status: "needs_input" },
-];
+function ResultView({ result }) {
+  const proposed = result.tasks.filter(({ status }) => status === "proposed").length;
+  const needsInput = result.tasks.length - proposed;
+  return <>
+    <section className="metrics">
+      <article><b>{result.sourceMessageCount}</b><span>분석 메시지</span></article>
+      <article><b>{result.tasks.length}</b><span>추출 작업</span></article>
+      <article><b>{proposed}</b><span>근거 있는 제안</span></article>
+      <article><b>{needsInput}</b><span>추가 확인 필요</span></article>
+    </section>
+    <section className="panel">
+      <p className="eyebrow">01 / LATEST DISCORD RESULT</p>
+      <h2>{result.summary}</h2>
+      <p className="timestamp">최근 분석 {new Date(result.generatedAt).toLocaleString("ko-KR")}</p>
+      <div className="taskGrid">
+        {result.tasks.map((task, index) => <article className="task" key={`${task.title}-${index}`}>
+          <span className={`badge ${task.status}`}>{task.status === "proposed" ? "역할 제안" : "확인 필요"}</span>
+          <h3>{task.title}</h3>
+          <strong>{task.ownerName || "담당자 미정"}</strong>
+          <p>{task.reason}</p>
+          <small>근거 메시지: {task.evidenceMessageIds.join(", ") || "없음"}</small>
+        </article>)}
+      </div>
+    </section>
+    <section className="panel questions">
+      <p className="eyebrow">02 / HUMAN CHECK</p>
+      <h2>사람이 확인할 항목</h2>
+      {result.questions.length
+        ? <ul>{result.questions.map((question) => <li key={question}>{question}</li>)}</ul>
+        : <p className="muted">현재 추가 질문이 없습니다.</p>}
+    </section>
+  </>;
+}
 
 export default function Home() {
-  const [loaded, setLoaded] = useState(false);
-  const [assigned, setAssigned] = useState(false);
-  const [items, setItems] = useState(base);
-  const [selected, setSelected] = useState("data");
-  const active = items.find((item) => item.id === selected) || items[0];
-  const confirm = (id) => setItems((current) => current.map((item) => item.id === id ? { ...item, status: "confirmed" } : item));
+  const [channel, setChannel] = useState("");
+  const [result, setResult] = useState(null);
+  const [state, setState] = useState(API_BASE ? "loading" : "not_configured");
+  const requestUrl = useMemo(() => {
+    if (!API_BASE) return null;
+    const query = channel ? `?channel_id=${encodeURIComponent(channel)}` : "";
+    return `${API_BASE}/api/goal-referee/results/latest${query}`;
+  }, [channel]);
+
+  useEffect(() => {
+    const selected = new URLSearchParams(location.search).get("channel") || "";
+    setChannel(selected);
+  }, []);
+
+  useEffect(() => {
+    if (!requestUrl) return;
+    let active = true;
+    setState("loading");
+    fetch(requestUrl, { headers: { accept: "application/json" } })
+      .then(async (response) => {
+        if (response.status === 404) return null;
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        if (!active) return;
+        setResult(data);
+        setState(data ? "ready" : "empty");
+      })
+      .catch(() => active && setState("error"));
+    return () => { active = false; };
+  }, [requestUrl]);
+
   return <>
-    <Head><title>Discord Goal Referee</title><meta name="viewport" content="width=device-width, initial-scale=1" /></Head>
+    <Head>
+      <title>Discord Goal Referee</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="description" content="Discord 근거 기반 역할 제안 대시보드" />
+    </Head>
     <main>
-      <nav><div className="brand"><span className="mark">GR</span><span>Goal Referee</span></div><div className="live"><i /> Discord mock event ready</div></nav>
-      <header><div><p className="eyebrow">EVIDENCE, NOT ACTIVITY</p><h1>대화에서 찾는<br /><em>근거 기반 역할 제안</em></h1></div><div className="intro"><p>Discord 메시지를 정규화한 뒤, 실제로 맡겠다고 말한 근거와 마감만 사용합니다. 자동 확정이나 메시지 수 평가는 하지 않습니다.</p><div className="actions"><button onClick={() => setLoaded(true)}>1. EmptyRoom 대화 불러오기</button><button className="ghost" disabled={!loaded} onClick={() => setAssigned(true)}>2. 역할 제안 만들기</button></div></div></header>
-      <section className="metrics"><div><b>{loaded ? messages.length : 0}</b><span>정규화된 Discord 메시지</span></div><div><b>{assigned ? 4 : 0}</b><span>근거 있는 역할 제안</span></div><div><b>{assigned ? 1 : 0}</b><span>추가 입력 필요</span></div><div><b>0</b><span>자동 확정</span></div></section>
-      {loaded && <section className="workspace transcript"><div className="sectionHead"><div><p className="eyebrow">00 / DISCORD INPUT</p><h2>EmptyRoom 모의 Discord 대화</h2></div><span className="hint">bot·빈 메시지·짧은 반응은 제외</span></div><div className="messageList">{messages.map((message) => <article key={message.id}><b>{message.time}</b><strong>{message.author}</strong><p>{message.text}</p><code>message_id: {message.id}</code></article>)}</div></section>}
-      <section className="workspace"><div className="sectionHead"><div><p className="eyebrow">01 / ASSIGNMENT</p><h2>근거 기반 역할 제안</h2></div><span className="hint">카드를 선택해 근거를 확인하세요</span></div>{!assigned ? <div className="empty"><span>01</span><p>{loaded ? "역할 제안 만들기를 눌러 명시적 약속만 역할 후보로 바꾸세요." : "먼저 EmptyRoom 모의 대화를 불러오세요."}</p></div> : <div className="assignmentLayout"><div className="cards">{items.map((item) => <button key={item.id} className={`roleCard ${selected === item.id ? "active" : ""}`} onClick={() => setSelected(item.id)}><span className={`state ${item.status}`}>{item.status}</span><strong>{item.owner || "미정"}</strong><p>{item.task}</p><small>{item.deadline}</small></button>)}</div><aside><p className="eyebrow">WHY THIS OWNER</p><h3>{active.owner || "담당 근거 필요"}</h3><p>{active.reason}</p><div className="evidence"><span>직접 근거</span>{active.evidence}</div><div className="deadline">마감 · {active.deadline}</div>{!active.owner && <div className="blocker">근거 부족</div>}{active.owner && <button onClick={() => confirm(active.id)} disabled={active.status === "confirmed"}>{active.status === "confirmed" ? "사람 확인 완료" : "이 배정 확인"}</button>}</aside></div>}</section>
-      {assigned && <section className="workspace"><div className="sectionHead"><div><p className="eyebrow">02 / STATUS</p><h2>확정 전 진행 상태</h2></div><span className="hint">완료율은 제출물·확인 근거가 생긴 뒤 계산</span></div><div className="progressGrid">{items.map((item) => { const percent = !item.owner ? null : item.status === "confirmed" ? 80 : 40; return <article key={item.id}><div className="row"><span>{!item.owner ? "입력 필요" : item.status === "confirmed" ? "검토 대기" : "제안됨"}</span><b>{percent === null ? "N/A" : `${percent}%`}</b></div><h3>{item.task}</h3><div className="track"><i style={{ width: `${percent || 0}%` }} /></div><p>{item.owner ? `${item.owner}의 확인 또는 제출물 대기` : "담당자 입력 필요"}</p></article>; })}</div></section>}
-      <footer><p>허용 채널만 분석</p><p>사람 확인 전까지는 제안</p><p>근거 없는 자동 배정 금지</p><a href="https://github.com/shan1343/0812-discord-goal-referee">GitHub 보기</a></footer>
+      <nav><div className="brand"><span>GR</span> GoalReferee</div><div className={`live ${state}`}><i /> {state === "ready" ? "Discord 동기화됨" : "동기화 확인 중"}</div></nav>
+      <header>
+        <p className="eyebrow">EVIDENCE, NOT ACTIVITY</p>
+        <h1>Discord 대화를<br /><em>실행 근거</em>로.</h1>
+        <p>메시지 수가 아니라 직접 약속한 역할과 출처 메시지를 연결합니다. AI 제안은 사람이 확인하기 전까지 확정되지 않습니다.</p>
+      </header>
+      {state === "ready" && result && <ResultView result={result} />}
+      {state !== "ready" && <section className="panel empty">
+        <h2>{state === "not_configured" ? "웹 API 주소가 설정되지 않았습니다." : state === "error" ? "동기화 API에 연결할 수 없습니다." : state === "empty" ? "아직 게시된 Discord 분석이 없습니다." : "최신 Discord 분석을 불러오는 중입니다."}</h2>
+        <p>Discord에서 <code>/goal-referee</code>를 실행한 뒤 응답의 ‘웹 대시보드 열기’를 선택하세요.</p>
+      </section>}
+      <footer>허용 채널만 분석 · 근거 없는 담당자 자동 확정 금지 · 원문과 API 키는 화면에 표시하지 않음</footer>
     </main>
   </>;
 }

@@ -212,6 +212,7 @@ tempCodeRunnerFile.py
 # Node/Discord bot runtime
 node_modules/
 discord-progress-bot/node_modules/
+data/
 
 # Ruff stuff:
 .ruff_cache/

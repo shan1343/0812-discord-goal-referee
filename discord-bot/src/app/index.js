@@ -8,6 +8,7 @@ import { createLiveChatHandler } from "../discord/live-chat.js";
 import { ProjectStore } from "../storage/project-store.js";
 import { assertLiveConfig, loadConfig, publicConfig } from "./config.js";
 import { ProjectService } from "./project-service.js";
+import { createDashboardPublisher } from "../dashboard/publisher.js";
 
 export async function startApp({ env = process.env, cwd = process.cwd(), logger = console } = {}) {
   const config = loadConfig(env, cwd);
@@ -31,12 +32,17 @@ export async function startApp({ env = process.env, cwd = process.cwd(), logger 
     timeoutMs: config.ai.timeoutMs,
   });
   const goalReferee = createGoalReferee({ mode: config.ai.mode, apiKey: config.ai.apiKey, model: config.ai.model });
-  const handleInteraction = createInteractionRouter({ service, config, chatResponder, goalReferee, logger });
+  const dashboardPublisher = createDashboardPublisher({
+    apiBaseUrl: config.dashboard.apiBaseUrl,
+    ingestToken: config.dashboard.ingestToken,
+    webBaseUrl: config.dashboard.webBaseUrl,
+  });
+  const handleInteraction = createInteractionRouter({ service, config, chatResponder, goalReferee, dashboardPublisher, logger });
   const handleMessage = createLiveChatHandler({ service, responder: chatResponder, config, logger });
   const client = createDiscordClient({ config, handleInteraction, handleMessage, logger });
   await client.login(config.discord.token);
   logger.info("Configuration", publicConfig(config));
-  return { chatResponder, client, config, extractor, goalReferee, handleInteraction, handleMessage, service, store };
+  return { chatResponder, client, config, dashboardPublisher, extractor, goalReferee, handleInteraction, handleMessage, service, store };
 }
 
 const isCli = process.argv[1]

@@ -85,7 +85,7 @@ function mockResult(messages) {
   }, messages);
 }
 
-export function createGoalReferee({ mode = "mock", apiKey, model = "gpt-5.6-terra", client } = {}) {
+export function createGoalReferee({ mode = "mock", apiKey, model = "gpt-5-mini", client } = {}) {
   if (!new Set(["mock", "live"]).has(mode)) throw new RangeError(`Unsupported AI mode: ${mode}`);
   return Object.freeze({
     async analyze({ guildId, channelId, messages } = {}) {

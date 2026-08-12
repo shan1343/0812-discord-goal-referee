@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.config import goal_referee_results
+from app.main import app, require_ingest_token
 from app.store import store
 
 
@@ -97,3 +98,40 @@ def test_duplicate_message_is_not_used_twice() -> None:
     body = {"channel_id": "project-room", "message_id": "same", "author_id": "u-1", "content": "hello"}
     assert client.post("/api/discord/events", json=body).json()["duplicate"] is False
     assert client.post("/api/discord/events", json=body).json()["duplicate"] is True
+
+
+def test_discord_result_is_published_and_read_by_channel(tmp_path) -> None:
+    original_path = goal_referee_results._path
+    goal_referee_results._path = tmp_path / "results.json"
+    app.dependency_overrides[require_ingest_token] = lambda: None
+    payload = {
+        "schemaVersion": "1.0",
+        "guildId": "guild-1",
+        "channelId": "channel-1",
+        "generatedAt": "2026-08-12T09:00:00.000Z",
+        "summary": "근거 기반 역할 제안",
+        "tasks": [{
+            "title": "웹 연동",
+            "ownerId": "user-1",
+            "ownerName": "민지",
+            "reason": "직접 약속",
+            "evidenceMessageIds": ["message-1"],
+            "status": "proposed",
+        }],
+        "questions": [],
+        "sourceMessageCount": 5,
+    }
+    try:
+        published = client.post("/api/goal-referee/results", json=payload)
+        latest = client.get("/api/goal-referee/results/latest?channel_id=channel-1")
+        assert published.status_code == 200
+        assert latest.status_code == 200
+        assert latest.json() == payload
+    finally:
+        app.dependency_overrides.pop(require_ingest_token, None)
+        goal_referee_results._path = original_path
+
+
+def test_discord_result_ingest_rejects_missing_token() -> None:
+    response = client.post("/api/goal-referee/results", json={})
+    assert response.status_code == 401

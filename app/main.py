@@ -1,10 +1,11 @@
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from app.config import settings
+from app.config import goal_referee_results, settings
 from app.services import (
     apply_constraint,
     confirm_assignment,
@@ -19,6 +20,15 @@ from app.store import store
 
 app = FastAPI(title="Discord Goal Referee", version="0.1.0")
 STATIC_DIR = Path(__file__).parent / "static"
+
+if settings.dashboard_cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.dashboard_cors_origins),
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
 
 
 class ConfirmRequest(BaseModel):
@@ -64,6 +74,32 @@ class DiscordProjectRequest(BaseModel):
     tasks: list[ProjectTaskRequest] = Field(min_length=1, max_length=20)
 
 
+class GoalRefereeTaskResult(BaseModel):
+    title: str = Field(min_length=1, max_length=180)
+    ownerId: str | None = Field(default=None, max_length=100)
+    ownerName: str | None = Field(default=None, max_length=100)
+    reason: str = Field(min_length=1, max_length=350)
+    evidenceMessageIds: list[str] = Field(default_factory=list, max_length=4)
+    status: str = Field(pattern="^(proposed|needs_input)$")
+
+
+class GoalRefereeResultRequest(BaseModel):
+    schemaVersion: str = Field(pattern="^1\\.0$")
+    guildId: str = Field(min_length=1, max_length=100)
+    channelId: str = Field(min_length=1, max_length=100)
+    generatedAt: str = Field(min_length=1, max_length=80)
+    summary: str = Field(min_length=1, max_length=500)
+    tasks: list[GoalRefereeTaskResult] = Field(default_factory=list, max_length=8)
+    questions: list[str] = Field(default_factory=list, max_length=5)
+    sourceMessageCount: int = Field(ge=1, le=50)
+
+
+def require_ingest_token(authorization: str | None = Header(default=None)) -> None:
+    expected = settings.goal_referee_ingest_token
+    if not expected or authorization != f"Bearer {expected}":
+        raise HTTPException(status_code=401, detail="Invalid dashboard ingest token.")
+
+
 @app.get("/", include_in_schema=False)
 def dashboard() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
@@ -73,10 +109,11 @@ def dashboard() -> FileResponse:
 def health() -> dict:
     return {
         "status": "ok",
-        "bot": "not_connected",
-        "model": "fixture_fallback",
+        "bot": "external",
+        "model": settings.openai_model,
         "database": "memory",
         "environment": settings.app_env,
+        "dashboard_sync": "configured" if settings.goal_referee_ingest_token else "not_configured",
     }
 
 
@@ -173,3 +210,24 @@ def files(project_id: str) -> dict:
     if store.project is None or project_id != store.project["id"]:
         raise HTTPException(status_code=404, detail="Project not found.")
     return {"project_id": project_id, "artifacts": store.snapshot()["artifacts"]}
+
+
+@app.post("/api/goal-referee/results", dependencies=[Depends(require_ingest_token)])
+def publish_goal_referee_result(request: GoalRefereeResultRequest) -> dict:
+    payload = request.model_dump()
+    goal_referee_results.put(request.channelId, payload)
+    return {
+        "accepted": True,
+        "channelId": request.channelId,
+        "generatedAt": request.generatedAt,
+    }
+
+
+@app.get("/api/goal-referee/results/latest")
+def latest_goal_referee_result(
+    channel_id: str | None = Query(default=None, max_length=100),
+) -> dict:
+    result = goal_referee_results.latest(channel_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="No Goal Referee result has been published.")
+    return result

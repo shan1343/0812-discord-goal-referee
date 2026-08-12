@@ -151,15 +151,21 @@ def _matches_task(promise: str, task: dict, allow_single_task: bool) -> bool:
     promise_key = _compact(promise)
     if not promise_key:
         return False
-    phrases = [task["title"], *task.get("keywords", [])]
+    title = task["title"]
+    keywords = task.get("keywords", [])
+    phrases = [title, *keywords]
     for phrase in phrases:
         key = _compact(phrase)
         if len(key) >= 2 and (key in promise_key or promise_key in key):
             return True
     promise_terms = _terms(promise)
-    for phrase in phrases:
-        if promise_terms.intersection(_terms(phrase)):
+    for keyword in keywords:
+        keyword_terms = _terms(keyword)
+        if keyword_terms and keyword_terms.issubset(promise_terms):
             return True
+    title_overlap = promise_terms.intersection(_terms(title))
+    if len(title_overlap) >= 2:
+        return True
     return False
 
 
