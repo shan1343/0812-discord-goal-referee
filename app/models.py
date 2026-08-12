@@ -22,6 +22,7 @@ class Assignment:
     blockers: list[str] = field(default_factory=list)
     alternative: str | None = None
     status: str = "proposed"
+    owner_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
