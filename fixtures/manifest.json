@@ -1,0 +1,21 @@
+{
+  "fixture_version": "1.1",
+  "author": "B fixture owner",
+  "reviewer": "C eval owner",
+  "privacy": "synthetic-only",
+  "scenarios": [
+    {"id": "happy_path", "path": "fixtures/conversations/happy_path.json", "expected": "명시적 약속과 근거에 따라 네 역할이 제안된다."},
+    {"id": "missing_evidence", "path": "fixtures/conversations/missing_evidence.json", "expected": "owner=null, needs_input이며 '내가 다 할게'만으로 확정하지 않는다."},
+    {"id": "deadline_conflict", "path": "fixtures/conversations/deadline_conflict.json", "expected": "14시 수업과 14시 마감 충돌을 blocker로 표시하거나 후보에서 제외한다."},
+    {"id": "completion_without_file", "path": "fixtures/conversations/completion_without_file.json", "expected": "필수 파일과 테스트가 없으므로 review_pending이며 100%가 아니다."},
+    {"id": "version_conflict", "path": "fixtures/conversations/version_conflict.json", "expected": "v1과 final 후보를 구분하고 checksum·검증 상태를 확인한다."}
+  ],
+  "artifact_manifest": [
+    {"file_name": "discord_happy_path_v1.json", "task": "fixture 작성", "version": "v1", "validation_status": "valid"},
+    {"file_name": "assignment_notes.md", "task": "역할 배정 근거", "version": "v1", "validation_status": "valid"},
+    {"file_name": "security_smoke_result.md", "task": "보안 smoke test", "version": "v1", "validation_status": "pending_review"},
+    {"file_name": "demo_v1.zip", "task": "배포용 데모 파일", "version": "v1", "validation_status": "superseded"},
+    {"file_name": "demo_final.zip", "task": "배포용 데모 파일", "version": "candidate-final", "validation_status": "pending_smoke_test"}
+  ],
+  "annotation_guide": "각 expected 항목의 task는 Task, 명시된 message ID 또는 대화문은 Evidence, 수업·마감·누락 파일은 Constraint로 사용한다."
+}

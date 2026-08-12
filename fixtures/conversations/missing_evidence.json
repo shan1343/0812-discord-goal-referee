@@ -1,0 +1,19 @@
+{
+  "fixture_version": "1.1",
+  "scenario": "missing_evidence",
+  "channel_id": "project-room",
+  "messages": [
+    {"id": "1000", "author": "유나", "created_at": "2026-08-12T10:00:00+09:00", "content": "제출 카피 최종 검수가 필요해."},
+    {"id": "1001", "author": "서연", "created_at": "2026-08-12T10:01:00+09:00", "content": "내가 다 할게."},
+    {"id": "1002", "author": "유나", "created_at": "2026-08-12T10:02:00+09:00", "content": "아직 누가 카피 검수 경험이 있는지와 가능한 시간은 공유되지 않았어."},
+    {"id": "1003", "author": "유나", "created_at": "2026-08-12T10:03:00+09:00", "content": "/assign"},
+    {"id": "1004", "author": "민재", "created_at": "2026-08-12T10:04:00+09:00", "content": "/progress"}
+  ],
+  "expected_outcome": {
+    "task": "제출 카피 최종 검수",
+    "owner": null,
+    "status": "needs_input",
+    "reason": "역량·가용시간·명시적 담당 약속이 부족하다.",
+    "must_not_do": ["'내가 다 할게'라는 말만으로 owner를 확정하지 않는다."]
+  }
+}

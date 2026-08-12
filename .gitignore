@@ -1,5 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+node_modules/
+.next/
 *.py[codz]
 *$py.class
 
@@ -150,6 +152,10 @@ activemq-data/
 # Environments
 .env
 .envrc
+.env.*
+!.env.example
+*.db
+*.sqlite3
 .venv
 env/
 venv/

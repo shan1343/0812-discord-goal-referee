@@ -1,0 +1,1 @@
+"""Discord Goal Referee application."""
