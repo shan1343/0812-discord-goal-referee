@@ -22,6 +22,13 @@ uvicorn app.main:app --reload --port 8000
 브라우저에서 `http://localhost:8000`을 열고 **데모 데이터 넣기**부터 실행합니다.
 API 문서는 `http://localhost:8000/docs`에서 볼 수 있습니다.
 
+배포용 인터랙티브 웹사이트는 Next 기반이며 다음 명령으로 실행합니다.
+
+```bash
+pnpm install
+pnpm dev:web
+```
+
 ## Test
 
 ```bash
