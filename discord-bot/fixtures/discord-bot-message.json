@@ -1,0 +1,13 @@
+{
+  "id": "150123456789012346",
+  "guildId": "150000000000000001",
+  "channelId": "150000000000000002",
+  "content": "자동 상태 알림",
+  "createdAt": "2026-08-12T03:06:00.000Z",
+  "author": {
+    "id": "150000000000000099",
+    "username": "readiness-bot",
+    "bot": true
+  },
+  "attachments": []
+}
