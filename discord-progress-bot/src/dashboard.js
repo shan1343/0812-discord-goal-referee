@@ -24,6 +24,11 @@ function bullet(items, empty = "없음") {
   return items?.length ? items.map((item) => `• ${item}`).join("\n") : empty;
 }
 
+function clipped(value, limit = 1024) {
+  const text = String(value || "없음");
+  return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
+}
+
 /** Discord 의존성을 분리해 UI 내용을 단위 테스트할 수 있게 합니다. */
 export function dashboardContent(report, updatedAt = new Date()) {
   const [icon, statusText] = STATUS[report.overall_status] || STATUS.attention;
@@ -67,3 +72,35 @@ export function detailContent(report) {
   }));
 }
 
+export function rolesDashboardContent(report) {
+  const assignments = report.assignments || [];
+  return {
+    title: "🤖 GoalReferee · 역할 분담 제안",
+    description: "아래 배정은 대화 근거에 기반한 **제안**입니다. 팀원이 확인한 뒤 확정하세요.",
+    fields: [
+      { name: "🎯 목표", value: clipped(`**${report.project_goal}**\n범위: ${report.scope}`), inline: false },
+      ...assignments.slice(0, 12).map((assignment) => ({
+        name: clipped(`🟣 ${assignment.person} · ${assignment.suggested_role}`, 256),
+        value: clipped(`**제안 상태** · 마감: ${assignment.deadline}\n작업:\n${bullet(assignment.tasks)}\n이유: ${assignment.reason}\n근거: ${assignment.evidence_ids?.join(", ") || "판단 근거 부족"}`),
+        inline: false
+      })),
+      { name: report.risks?.length ? "⚠️ 확인할 항목" : "✨ 확인할 항목 없음", value: clipped(bullet(report.risks, "대화상 추가 확인이 필요한 항목이 없습니다.")), inline: false }
+    ],
+    footer: "대화 근거 기반 · 역할은 확정 전 제안 상태"
+  };
+}
+
+export async function createRolesDashboard(report, { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle }) {
+  const content = rolesDashboardContent(report);
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(content.title)
+    .setDescription(content.description)
+    .addFields(content.fields)
+    .setFooter({ text: content.footer })
+    .setTimestamp(new Date());
+  const buttons = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("roles:refresh").setLabel("다시 분석").setEmoji("↻").setStyle(ButtonStyle.Primary)
+  );
+  return { embeds: [embed], components: [buttons] };
+}
