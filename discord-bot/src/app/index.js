@@ -1,6 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { createExtractor } from "../ai/extract.js";
 import { createChatResponder } from "../ai/chat.js";
+import { createGoalReferee } from "../ai/goal-referee.js";
 import { createDiscordClient } from "../discord/client.js";
 import { createInteractionRouter } from "../discord/router.js";
 import { createLiveChatHandler } from "../discord/live-chat.js";
@@ -29,12 +30,13 @@ export async function startApp({ env = process.env, cwd = process.cwd(), logger 
     maxOutputTokens: config.ai.maxOutputTokens,
     timeoutMs: config.ai.timeoutMs,
   });
-  const handleInteraction = createInteractionRouter({ service, config, chatResponder, logger });
+  const goalReferee = createGoalReferee({ mode: config.ai.mode, apiKey: config.ai.apiKey, model: config.ai.model });
+  const handleInteraction = createInteractionRouter({ service, config, chatResponder, goalReferee, logger });
   const handleMessage = createLiveChatHandler({ service, responder: chatResponder, config, logger });
   const client = createDiscordClient({ config, handleInteraction, handleMessage, logger });
   await client.login(config.discord.token);
   logger.info("Configuration", publicConfig(config));
-  return { chatResponder, client, config, extractor, handleInteraction, handleMessage, service, store };
+  return { chatResponder, client, config, extractor, goalReferee, handleInteraction, handleMessage, service, store };
 }
 
 const isCli = process.argv[1]

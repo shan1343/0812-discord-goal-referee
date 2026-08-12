@@ -2,6 +2,7 @@ import path from "node:path";
 import { PermissionFlagsBits } from "discord.js";
 import { rm } from "node:fs/promises";
 import { normalizeDiscordMessage } from "../etl/discord-event.js";
+import { goalRefereeText } from "../ai/goal-referee.js";
 import { downloadArtifact } from "../artifacts/registry.js";
 import { assignmentView, chatStatusView, chatTestView, errorView, statusView } from "./views.js";
 
@@ -70,7 +71,7 @@ function summaryProject(project) {
   };
 }
 
-export function createInteractionRouter({ service, config, chatResponder, fetchImpl = fetch, logger = console }) {
+export function createInteractionRouter({ service, config, chatResponder, goalReferee, fetchImpl = fetch, logger = console }) {
   async function requireGuild(interaction) {
     if (!interaction.guildId) throw new Error("서버 채널에서만 사용할 수 있습니다.");
     return service.requireProject(interaction.guildId, interaction.channelId);
@@ -173,6 +174,27 @@ export function createInteractionRouter({ service, config, chatResponder, fetchI
       actor: actorFromInteraction(interaction),
     });
     return interaction.editReply(assignmentView(projectResult(project), project));
+  }
+
+  async function handleGoalReferee(interaction) {
+    if (!interaction.guildId || !interaction.channel?.messages?.fetch) throw new Error("서버의 텍스트 채널에서만 사용할 수 있습니다.");
+    if (!config.discord?.enableMessageContent) throw new Error("Message Content Intent를 켜고 봇을 다시 시작해 주세요.");
+    if (!goalReferee) throw new Error("Goal Referee가 초기화되지 않았습니다.");
+    await interaction.deferReply();
+    const limit = interaction.options.getInteger("messages") || 40;
+    const fetched = await interaction.channel.messages.fetch({ limit });
+    const messages = [...fetched.values()]
+      .filter((message) => !message.author?.bot && message.guildId === interaction.guildId && String(message.content || "").trim())
+      .sort((left, right) => left.createdTimestamp - right.createdTimestamp)
+      .map((message) => ({
+        id: message.id,
+        authorId: message.author.id,
+        authorName: message.member?.displayName || message.author.globalName || message.author.username,
+        createdAt: new Date(message.createdTimestamp).toISOString(),
+        content: message.content,
+      }));
+    const result = await goalReferee.analyze({ guildId: interaction.guildId, channelId: interaction.channelId, messages });
+    return interaction.editReply({ content: goalRefereeText(result), allowedMentions: { parse: [] } });
   }
 
   async function handleStatus(interaction) {
@@ -403,6 +425,7 @@ export function createInteractionRouter({ service, config, chatResponder, fetchI
       if (interaction.commandName === "project") return await handleProject(interaction);
       if (interaction.commandName === "task") return await handleTask(interaction);
       if (interaction.commandName === "assign") return await handleAssign(interaction);
+      if (interaction.commandName === "goal-referee") return await handleGoalReferee(interaction);
       if (interaction.commandName === "status") return await handleStatus(interaction);
       if (interaction.commandName === "package") return await handlePackage(interaction);
       if (interaction.commandName === "artifact") return await handleArtifact(interaction);

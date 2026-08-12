@@ -357,6 +357,17 @@ export function buildCommands() {
     .setType(ApplicationCommandType.Message)
     .setDMPermission(false);
 
+  const goalReferee = new SlashCommandBuilder()
+    .setName("goal-referee")
+    .setDescription("최근 채널 대화로 역할과 할 일을 제안합니다")
+    .setDMPermission(false)
+    .addIntegerOption((option) => option
+      .setName("messages")
+      .setDescription("분석할 최근 메시지 수 (기본 40)")
+      .setRequired(false)
+      .setMinValue(30)
+      .setMaxValue(50));
+
   return [
     project,
     task,
@@ -365,6 +376,7 @@ export function buildCommands() {
     packageCommand,
     artifact,
     chat,
+    goalReferee,
     addAsEvidence,
   ].map((command) => command.toJSON());
 }

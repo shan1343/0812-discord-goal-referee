@@ -64,6 +64,7 @@ test("buildCommands returns the complete JSON-ready Discord command surface", ()
       ["package", ApplicationCommandType.ChatInput],
       ["artifact", ApplicationCommandType.ChatInput],
       ["chat", ApplicationCommandType.ChatInput],
+      ["goal-referee", ApplicationCommandType.ChatInput],
       ["근거로 추가", ApplicationCommandType.Message],
     ],
   );
