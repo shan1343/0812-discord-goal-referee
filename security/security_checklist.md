@@ -4,7 +4,8 @@
 
 - 제품: Discord Goal Referee v3
 - 담당: C — Security Red Team
-- 기준선: `main@5938b3206cb8ee3fa32cb0fe91c38c34ed60a178`
+- 최초 기준선: `main@5938b3206cb8ee3fa32cb0fe91c38c34ed60a178`
+- 현재 통합 시험: `6975fca` + C 산출물 및 별도 표시한 A 미커밋 변경 (`2026-08-12T14:46:05+09:00`)
 - 상태 원칙: 증거 없는 항목은 PASS가 아니다.
 
 Discord 공식 문서 기준으로 bot token은 비밀번호처럼 취급하고 필요한 권한만 요청한다. `MESSAGE_CONTENT`는 privileged intent이며, 전체 채널 수집이 필요하지 않은 MVP에서는 slash command, mention, message context command를 우선한다.
@@ -18,22 +19,22 @@ Discord 공식 문서 기준으로 bot token은 비밀번호처럼 취급하고 
 | ID | 통과 조건 | 현재 상태 | 필요한 증거 |
 | --- | --- | --- | --- |
 | SEC-GIT-01 | `.env`가 Git에서 제외됨 | PASS | `git check-ignore -v -- .env` → `.gitignore:151` |
-| SEC-GIT-02 | `.env.*` 제외, `!.env.example`만 허용 | FAIL | `FAIL-001`; A 수정 commit과 동일 명령 재시험 |
-| SEC-GIT-03 | 실제 값 없는 `.env.example` 존재 | FAIL | `FAIL-002`; key 이름만 검토 |
-| SEC-GIT-04 | 런타임 DB·첨부·로그·ZIP·캐시 경로가 Git에서 제외됨 | BLOCKED | A가 저장 경로를 동결한 뒤 `git check-ignore` |
-| SEC-SECRET-01 | 작업 트리·전체 이력의 실제 token/key 후보 0건 | PASS 기준선 | 값 비노출 scan 파일명 목록 0건 |
+| SEC-GIT-02 | `.env.*` 제외, `!.env.example`만 허용 | PASS | A commit `333f1f8`; `.env.local` ignore 확인 |
+| SEC-GIT-03 | 실제 값 없는 `.env.example` 존재 | PASS | 파일 존재, 정적 후보 0건 |
+| SEC-GIT-04 | 런타임 DB·첨부·로그·ZIP·캐시 경로가 Git에서 제외됨 | PARTIAL | DB/cache/build 제외; 실제 attachment/log 경로 동결 후 재검사 |
+| SEC-SECRET-01 | 작업 트리·전체 이력의 실제 token/key 후보 0건 | PASS | 공개/.env.example/이력/unignored env `0/0/0/0` |
 | SEC-SECRET-02 | health, Discord UI, 웹 UI, 오류, stdout/stderr, 저장 로그에 sentinel 0건 | BLOCKED | A 실행물과 fake sentinel |
-| SEC-ALLOW-01 | allowlist 밖 채널 이벤트 저장 0건, AI 호출 0회 | BLOCKED | fake store/model call count |
-| SEC-ALLOW-02 | DM·다른 guild·허용되지 않은 thread 거부 | BLOCKED | interaction test 결과 |
-| SEC-SIG-01 | interaction 서명·timestamp 검증이 allowlist·storage·AI보다 먼저 실행 | BLOCKED | missing/invalid/stale request 결과와 call count |
-| SEC-REPLAY-01 | 같은 interaction의 replay가 중복 side effect를 만들지 않음 | BLOCKED | 동일 payload 2회 결과와 idempotency 기록 |
+| SEC-ALLOW-01 | allowlist 밖 채널 이벤트 저장 0건, AI 호출 0회 | PASS (채널만) | API regression test 통과; AI adapter는 없음 |
+| SEC-ALLOW-02 | DM·다른 guild·허용되지 않은 thread 거부 | FAIL | 요청 모델에 guild/DM/thread 경계 없음 |
+| SEC-SIG-01 | interaction 서명·timestamp 검증이 allowlist·storage·AI보다 먼저 실행 | FAIL | signature/timestamp 검증 없음 |
+| SEC-REPLAY-01 | 같은 interaction/confirmation의 replay가 중복 side effect를 만들지 않음 | FAIL | confirm 재전송 audit 2건; Issue #6 |
 | SEC-PERM-01 | Administrator 없이 최소 bot 권한만 요청 | BLOCKED | Developer Portal/설치 설정 캡처 |
 | SEC-CONSENT-01 | 테스트 서버·명시적 동의 멤버·허용 채널 범위 표시 | BLOCKED | `/setup` 또는 관리자 설정 화면 |
 | SEC-RETENTION-01 | 기본 보존은 demo 세션 종료까지이며 기간을 설정 가능 | BLOCKED | 설정값, 만료 전후 storage 결과 |
 | SEC-FORGET-01 | 삭제 범위 미리보기와 관리자 확인 후 원문·프로젝트 삭제 | BLOCKED | `HITL-DELETE-01` 로그 |
 | SEC-ATTACH-01 | 개인정보 가능 첨부는 확인 전 다운로드·AI 전송하지 않음 | BLOCKED | fake downloader/model call count |
-| SEC-FALLBACK-01 | AI 실패 시 명시된 deterministic demo fallback | BLOCKED | timeout/401/429/5xx/빈 응답/schema 불일치/존재하지 않는 ID 결과 |
-| SEC-AUDIT-01 | 위험 행동에 actor, time, scope, before/after, reason, confirmation ID 기록 | BLOCKED | redacted audit record |
+| SEC-FALLBACK-01 | AI 실패 시 명시된 deterministic demo fallback | BLOCKED | AI adapter/오류 주입 경로가 없어 7종 미실행 |
+| SEC-AUDIT-01 | 위험 행동에 actor, time, scope, before/after, reason, confirmation ID 기록 | FAIL | actor/action만 기록; Issue #6 |
 
 ## Discord 최소 권한
 

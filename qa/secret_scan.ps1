@@ -1,21 +1,23 @@
 $ErrorActionPreference = 'Stop'
 
-$publicPattern = 'OPENAI_API_KEY\s*=\s*\S+|DISCORD_(BOT_)?TOKEN\s*=\s*\S+|DATABASE_URL\s*=\s*[^\s<>{}]+://[^\s<>{}]+:[^\s<>{}]+@[^\s<>{}]+|https://discord(?:app)?\.com/api/webhooks/[0-9]{10,}/[A-Za-z0-9._-]{20,}|sk-[A-Za-z0-9_-]{20,}'
-$historyPattern = 'OPENAI_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]]+|DISCORD_(BOT_)?TOKEN[[:space:]]*=[[:space:]]*[^[:space:]]+|DATABASE_URL[[:space:]]*=[[:space:]]*[^[:space:]]+://[^[:space:]]+:[^[:space:]]+@[^[:space:]]+|https://discord(app)?\.com/api/webhooks/[0-9]{10,}/[A-Za-z0-9._-]{20,}|sk-[A-Za-z0-9_-]{20,}'
+$publicPattern = 'OPENAI_API_KEY\s*=\s*\S+|DISCORD_(BOT_)?TOKEN\s*=\s*\S+|DATABASE_URL\s*=\s*[^\s<>{}]+://[^\s<>{}]+:[^\s<>{}]+@[^\s<>{}]+|https://discord(?:app)?\.com/api/webhooks/[0-9]{10,}/[A-Za-z0-9._-]{20,}|(?<![A-Za-z0-9_-])sk-[A-Za-z0-9_-]{20,}'
+$historyPattern = 'OPENAI_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]]+|DISCORD_(BOT_)?TOKEN[[:space:]]*=[[:space:]]*[^[:space:]]+|DATABASE_URL[[:space:]]*=[[:space:]]*[^[:space:]]+://[^[:space:]]+:[^[:space:]]+@[^[:space:]]+|https://discord(app)?\.com/api/webhooks/[0-9]{10,}/[A-Za-z0-9._-]{20,}|(^|[^A-Za-z0-9_-])sk-[A-Za-z0-9_-]{20,}'
 
 # Values are never emitted: both searches return file names only.
 $publicHits = @(
-  rg -l --hidden --no-ignore `
+  rg -l --hidden --no-ignore --no-messages `
     --glob '!.git/**' `
     --glob '!.env' `
     --glob '!.env.*' `
     --glob '!node_modules/**' `
+    --glob '!.pytest_cache/**' `
+    --glob '!__pycache__/**' `
     --pcre2 $publicPattern . 2>$null
 )
 
 $envExampleHits = @()
 $envExampleHits = @(
-  rg -l --hidden --no-ignore --glob '**/.env.example' --pcre2 $publicPattern . 2>$null
+  rg -l --hidden --no-ignore --no-messages --glob '**/.env.example' --pcre2 $publicPattern . 2>$null
 )
 
 $historyHits = @(
@@ -26,7 +28,7 @@ $historyHits = @(
 
 $unignoredLocalEnvFiles = New-Object System.Collections.Generic.List[string]
 $repositoryRoot = (Get-Location).Path
-Get-ChildItem -Force -File -Recurse | Where-Object {
+Get-ChildItem -Force -File -Recurse -ErrorAction SilentlyContinue | Where-Object {
   $_.FullName -notlike "$repositoryRoot\.git\*" -and
   ($_.Name -eq '.env' -or $_.Name -like '.env.*' -or $_.Name -eq '.envrc')
 } | ForEach-Object {

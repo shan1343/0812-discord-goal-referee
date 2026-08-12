@@ -53,7 +53,7 @@ assert.deepEqual(completion.expected.task_progress[0].percent_range, {
   min_inclusive: 80,
   max_inclusive: 99,
 });
-assert.deepEqual(completion.expected.task_progress[0].missing_required_files, ["deliverable.zip"]);
+assert.deepEqual(completion.expected.task_progress[0].missing_required_files, ["빌드 파일", "보안 테스트 결과"]);
 
 const conflict = goldset.scenarios.find(({ name }) => name === "deadline_conflict");
 assert.ok(conflict.expected.assignments[0].blockers.includes("deadline_availability_conflict"));

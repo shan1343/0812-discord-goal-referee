@@ -22,7 +22,10 @@ assert.equal(typeof manifest.author, "string", "manifest author is required");
 assert.ok(manifest.author.trim(), "manifest author must not be blank");
 assert.equal(typeof manifest.reviewer, "string", "manifest reviewer is required");
 assert.ok(manifest.reviewer.trim(), "manifest reviewer must not be blank");
-assert.ok(manifest.scenarios && typeof manifest.scenarios === "object", "manifest.scenarios is required");
+assert.ok(Array.isArray(manifest.scenarios), "manifest.scenarios must be an array");
+
+const manifestScenarios = new Map(manifest.scenarios.map((entry) => [entry.id, entry]));
+assert.equal(manifestScenarios.size, manifest.scenarios.length, "manifest scenario IDs must be unique");
 
 const semanticPattern = /^(goal|task|member|message|attachment|link|checkpoint|test|approval):[a-z0-9_:-]+$/;
 
@@ -37,57 +40,69 @@ function collectSemanticRefs(value, refs = new Set()) {
     return refs;
   }
   if (value && typeof value === "object") {
-    for (const item of Object.values(value)) collectSemanticRefs(item, refs);
+    for (const [key, item] of Object.entries(value)) {
+      if (key !== "bindings") collectSemanticRefs(item, refs);
+    }
   }
   return refs;
 }
 
+function resolveJsonPointer(root, pointer, scenarioName) {
+  assert.equal(typeof pointer, "string", `${scenarioName}: json_pointer must be a string`);
+  assert.ok(pointer === "" || pointer.startsWith("/"), `${scenarioName}: invalid JSON pointer ${pointer}`);
+  return pointer === "" ? root : pointer.slice(1).split("/").reduce((node, part) => {
+    const key = part.replaceAll("~1", "/").replaceAll("~0", "~");
+    assert.ok(node != null && Object.hasOwn(node, key), `${scenarioName}: JSON pointer not found ${pointer}`);
+    return node[key];
+  }, root);
+}
+
+const fixtureVersions = new Map();
+let bindingCount = 0;
 for (const scenario of goldset.scenarios) {
-  const entry = manifest.scenarios[scenario.name];
+  const entry = manifestScenarios.get(scenario.name);
   assert.ok(entry, `${scenario.name}: manifest entry is missing`);
-  assert.equal(entry.fixture_path, scenario.fixture_path, `${scenario.name}: fixture path mismatch`);
-  assert.equal(entry.fixture_version, manifest.fixture_version, `${scenario.name}: fixture_version mismatch`);
-  assert.equal(typeof entry.author, "string", `${scenario.name}: author is required`);
-  assert.ok(entry.author.trim(), `${scenario.name}: author must not be blank`);
-  assert.equal(typeof entry.reviewer, "string", `${scenario.name}: reviewer is required`);
-  assert.ok(entry.reviewer.trim(), `${scenario.name}: reviewer must not be blank`);
-  assert.ok(entry.semantic_bindings && typeof entry.semantic_bindings === "object",
-    `${scenario.name}: semantic_bindings is required`);
+  assert.equal(entry.path, scenario.fixture_path, `${scenario.name}: fixture path mismatch`);
+  assert.equal(typeof entry.expected, "string", `${scenario.name}: expected summary is required`);
+  assert.ok(entry.expected.trim(), `${scenario.name}: expected summary must not be blank`);
 
   const fixtureUrl = new URL(`../${scenario.fixture_path}`, import.meta.url);
   const fixture = JSON.parse(await readFile(fixtureUrl, "utf8"));
-  function resolveJsonPointer(root, pointer) {
-    assert.equal(typeof pointer, "string", `${scenario.name}: json_pointer must be a string`);
-    assert.ok(pointer === "" || pointer.startsWith("/"), `${scenario.name}: invalid JSON pointer ${pointer}`);
-    return pointer === "" ? root : pointer.slice(1).split("/").reduce((node, part) => {
-      const key = part.replaceAll("~1", "/").replaceAll("~0", "~");
-      assert.ok(node != null && Object.hasOwn(node, key), `${scenario.name}: JSON pointer not found ${pointer}`);
-      return node[key];
-    }, root);
+  assert.equal(fixture.scenario, scenario.name, `${scenario.name}: fixture scenario mismatch`);
+  assert.equal(typeof fixture.fixture_version, "string", `${scenario.name}: fixture_version is required`);
+  assert.ok(fixture.fixture_version.trim(), `${scenario.name}: fixture_version must not be blank`);
+  fixtureVersions.set(scenario.name, fixture.fixture_version);
+  assert.ok(Array.isArray(fixture.messages), `${scenario.name}: messages must be an array`);
+  assert.equal(new Set(fixture.messages.map(({ id }) => id)).size, fixture.messages.length,
+    `${scenario.name}: message IDs must be unique`);
+
+  assert.equal(scenario.binding_status, "bound", `${scenario.name}: binding_status must be bound`);
+  assert.ok(scenario.bindings && typeof scenario.bindings === "object", `${scenario.name}: bindings are required`);
+  for (const ref of collectSemanticRefs(scenario)) {
+    assert.ok(semanticPattern.test(ref), `${scenario.name}: invalid semantic ref ${ref}`);
+    assert.ok(Object.hasOwn(scenario.bindings, ref), `${scenario.name}: binding missing for ${ref}`);
   }
 
-  const concreteIds = new Set();
-  for (const ref of collectSemanticRefs(scenario)) {
-    assert.ok(Object.hasOwn(entry.semantic_bindings, ref), `${scenario.name}: binding missing for ${ref}`);
-    const binding = entry.semantic_bindings[ref];
-    assert.ok(binding && typeof binding === "object", `${scenario.name}: ${ref} binding must be an object`);
-    const { id: concreteId, kind, json_pointer: pointer } = binding;
-    assert.equal(typeof concreteId, "string", `${scenario.name}: ${ref} must bind to a string ID`);
-    assert.ok(concreteId.trim(), `${scenario.name}: ${ref} has an empty ID`);
-    assert.ok(!concreteIds.has(concreteId), `${scenario.name}: concrete ID ${concreteId} is reused`);
-    const expectedKind = ref.split(":", 1)[0];
-    assert.equal(kind, expectedKind, `${scenario.name}: ${ref} kind mismatch`);
-    const target = resolveJsonPointer(fixture, pointer);
-    assert.ok(target && typeof target === "object", `${scenario.name}: ${ref} pointer does not resolve to an object`);
-    assert.equal(target.id, concreteId, `${scenario.name}: ${ref} ID does not match pointed object`);
-    concreteIds.add(concreteId);
+  const stableIds = new Set();
+  for (const [ref, binding] of Object.entries(scenario.bindings)) {
+    assert.ok(semanticPattern.test(ref), `${scenario.name}: invalid binding ref ${ref}`);
+    assert.equal(binding.kind, ref.split(":", 1)[0], `${scenario.name}: ${ref} kind mismatch`);
+    assert.ok(!stableIds.has(binding.id), `${scenario.name}: stable ID ${binding.id} is reused`);
+    stableIds.add(binding.id);
+    const root = binding.source === "fixture" ? fixture : manifest;
+    const actualValue = resolveJsonPointer(root, binding.json_pointer, scenario.name);
+    assert.deepEqual(actualValue, binding.expected_value,
+      `${scenario.name}: ${ref} expected_value does not match ${binding.source}${binding.json_pointer}`);
+    bindingCount += 1;
   }
 }
 
-assert.equal(goldset.status, "bound", "goldset status must be bound once a B manifest exists");
+assert.equal(goldset.status, "bound", "goldset status must be bound once all C bindings pass");
 assert.equal(goldset.fixture_version, manifest.fixture_version,
-  "goldset fixture_version must equal the B manifest version");
+  "goldset fixture_version must equal the B collection manifest version");
 
 console.log("fixture_binding=PASS");
-console.log(`fixture_version=${manifest.fixture_version}`);
+console.log(`fixture_collection_version=${manifest.fixture_version}`);
 console.log(`scenario_count=${goldset.scenarios.length}`);
+console.log(`binding_count=${bindingCount}`);
+console.log(`fixture_versions=${[...fixtureVersions].map(([name, version]) => `${name}:${version}`).join(",")}`);

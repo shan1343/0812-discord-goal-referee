@@ -26,9 +26,9 @@ const [goldset, manifest, actual] = await Promise.all([
 ]);
 const oracle = goldset.scenarios.find(({ name }) => name === scenarioName);
 assert.ok(oracle, `unknown scenario: ${scenarioName}`);
-const manifestScenario = manifest.scenarios?.[scenarioName];
+const manifestScenario = manifest.scenarios?.find(({ id }) => id === scenarioName);
 assert.ok(manifestScenario, `${scenarioName}: manifest entry is missing`);
-const bindings = manifestScenario.semantic_bindings ?? {};
+const bindings = oracle.bindings ?? {};
 
 function idFor(ref) {
   assert.equal(typeof ref, "string", `cannot bind non-string ref: ${ref}`);
@@ -156,6 +156,9 @@ function compareArtifacts() {
   }
   if (oracle.expected.latest_valid_artifact_ref) {
     assert.equal(actual.latest_valid_artifact_id, idFor(oracle.expected.latest_valid_artifact_ref));
+  } else if (Object.hasOwn(oracle.expected, "latest_valid_artifact_ref")) {
+    hasOwn(actual, "latest_valid_artifact_id");
+    assert.equal(actual.latest_valid_artifact_id, null);
   }
   if (oracle.expected.task_state) assert.equal(actual.task_state, oracle.expected.task_state);
   if (oracle.expected.next_action) assert.equal(actual.next_action, oracle.expected.next_action);

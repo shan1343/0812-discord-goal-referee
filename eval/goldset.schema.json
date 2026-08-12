@@ -220,7 +220,20 @@
         "validation_status": { "type": "string", "minLength": 1 },
         "is_latest_by_time": { "type": "boolean" },
         "is_latest_valid": { "type": "boolean" },
-        "checksum_required": { "const": true }
+        "checksum_required": { "type": "boolean" },
+        "source_message_ref": { "type": "string", "pattern": "^message:[a-z0-9_:-]+$" }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "json_pointer", "kind", "id", "expected_value"],
+      "properties": {
+        "source": { "enum": ["fixture", "manifest"] },
+        "json_pointer": { "type": "string", "pattern": "^/" },
+        "kind": { "enum": ["goal", "task", "member", "message", "attachment", "link", "checkpoint", "test", "approval"] },
+        "id": { "type": "string", "minLength": 1 },
+        "expected_value": { "type": ["string", "number", "boolean", "null"] }
       }
     },
     "expected": {
@@ -240,7 +253,12 @@
         "done_100_allowed": { "type": "boolean" },
         "completion_confirmation_allowed": { "type": "boolean" },
         "artifacts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/artifact" } },
-        "latest_valid_artifact_ref": { "type": "string", "pattern": "^attachment:[a-z0-9_:-]+$" },
+        "latest_valid_artifact_ref": {
+          "oneOf": [
+            { "type": "string", "pattern": "^attachment:[a-z0-9_:-]+$" },
+            { "type": "null" }
+          ]
+        },
         "filename_alone_must_not_decide": { "type": "boolean" },
         "automatic_final_confirmation": { "type": "boolean" },
         "task_state": { "enum": ["not_started", "in_progress", "review_pending", "blocked", "done", "unknown"] },
@@ -274,6 +292,11 @@
           "pattern": "^fixtures/conversations/[a-z_]+\\.json$"
         },
         "binding_status": { "enum": ["pending_b_fixture", "bound"] },
+        "bindings": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/binding" }
+        },
         "fixture_requirements": {
           "type": "array",
           "minItems": 1,

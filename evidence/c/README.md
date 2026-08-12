@@ -1,54 +1,66 @@
 # C evidence index
 
-이 폴더는 C의 정답셋·테스트·보안 증거 위치만 기록한다. 실제 token/key, 개인 Discord 메시지, 개인 ID, 원문 첨부파일은 저장하지 않는다.
+실제 token/key, 개인 Discord 원문·ID, 민감 첨부는 저장하지 않는다. 실행 결과는 값 대신 판정과 건수만 기록한다.
 
-## 현재 기준선
+## C-EVID-001 — goldset schema/oracle
 
-- Repository: `shan1343/0812-discord-goal-referee`
-- Commit: `5938b3206cb8ee3fa32cb0fe91c38c34ed60a178`
-- Tested at: `2026-08-12T14:27:42+09:00`
-- Runtime: 아직 없음
-- B fixture binding: 아직 없음
+- Tested at: `2026-08-12T14:46:05+09:00`
+- Input: `eval/goldset.json`, `eval/goldset.schema.json`
+- Result: PASS
+- Output: schema/oracle PASS, scenario 5, assignment 8, global invariant 8, negative schema case 5
 
-## 로컬 검증 증거
+## C-EVID-002 — B fixture binding
 
-### C-EVID-001 — goldset 구조
+- Input: B manifest 1.1, conversation fixture 5개
+- Procedure: `node qa/validate_fixture_bindings.mjs`
+- Result: PASS
+- Output: scenario 5, concrete binding 28
+- Individual versions: happy 1.1, missing 1.1, deadline 1.0, completion 1.1, version 1.0
+- Bound evidence IDs: `0900, 0902, 0903, 0904, 0905, 1100, 1101, 1200, 1201, 1202, 1300, 1301` 등 validator에 명시된 실제 pointer
 
-- 입력: `eval/goldset.json`
-- 절차: PowerShell `ConvertFrom-Json`, scenario 이름/개수/고유 ID 검사
-- 결과: PASS
-- 관측값: `goldset_schema=PASS`, `goldset_oracle=PASS`, negative schema 5개 거부, scenario 5개, 고유 ID 5개, assignment oracle 8개, 모든 scenario의 Task/Owner/Status/Evidence oracle 존재, 공통 불변식 8개
-- 시나리오: happy_path, missing_evidence, deadline_conflict, completion_without_file, version_conflict
+## C-EVID-003 — secret와 환경 파일
 
-### C-EVID-002 — 비밀정보 기준선
+- `.env`, `.env.local`: Git ignore PASS
+- `.env.example`: 존재, secret candidate 0
+- Public surface candidates: 0
+- Git history candidates: 0
+- Unignored local env files: 0
+- Result: `secret_scan=PASS`
 
-- 입력: 공개·커밋 가능 작업 트리 표면과 전체 Git 이력; 로컬 `.env*`는 별도 ignore 여부만 검사
-- 절차: OpenAI/Discord token, Discord webhook, credential이 포함된 DATABASE_URL 고신뢰 패턴을 일치값이 아닌 파일명만 출력하도록 `--no-ignore` 검사하되 로컬 비밀 저장소 `.env*`와 의존성 폴더는 제외
-- 결과: PASS
-- 관측값: 공개 표면 후보 파일 0개, `.env.example` 후보 파일 0개(현재 파일 없음), Git 이력 후보 파일 0개, unignored 로컬 env 파일 0개, `secret_scan=PASS`
+## C-EVID-004 — security/HITL 설계
 
-### C-EVID-003 — 환경 파일 ignore
+- `security/security_checklist.md`에 allowlist, 최소 권한, 동의·보존·삭제, secret, signature/replay, fallback을 기록했다.
+- 배정, 완료, 외부 전송, 삭제, owner 교체, 마감 변경, 개인정보 가능 첨부 분석의 확인 문구 7개를 제공한다.
+- 이 문서 존재는 산출물 PASS이며, 구현되지 않은 runtime 항목을 PASS로 뜻하지 않는다.
 
-- `.env`: PASS — `.gitignore:151`에서 제외
-- `.env.local`: FAIL — 제외 규칙 없음 (`FAIL-001`)
-- `.env.example`: FAIL — 파일 없음 (`FAIL-002`)
+## C-EVID-005 — A regression tests
 
-### C-EVID-004 — fixture 준비
+- Command: Python 3.12 임시 의존성 환경에서 `pytest -q`
+- Result: `10 passed, 1 warning in 1.47s`
+- Warning: test client dependency deprecation; 테스트 실패는 아님
 
-- `fixtures/conversations/`: FAIL — 디렉터리 없음
-- 필요한 5개 fixture: 0/5
-- 연결 기록: `FAIL-003`
+## C-EVID-006 — runtime Red Team
 
-### C-EVID-005 — GitHub 기준선 조회
+- Input: `qa/runtime_red_team_probe.py`
+- Result: 1 behavioral PASS, 3 FAIL
+- PASS: evidence 없는 confirm 거부 — Issue #4, A fix commit 대기
+- FAIL: human-locked owner 미보존 — <https://github.com/shan1343/0812-discord-goal-referee/issues/5>
+- FAIL: deadline 충돌 owner 유지 — <https://github.com/shan1343/0812-discord-goal-referee/issues/7>
+- FAIL: confirm replay/audit 중복 — <https://github.com/shan1343/0812-discord-goal-referee/issues/6>
+- Exact output: `qa/test_matrix.md` 최신 실행 출력 참조
 
-- GitHub 연동으로 `shan1343/0812-discord-goal-referee` 메타데이터와 root, Issue 목록을 조회했다.
-- 관측값: default branch `main`, root tracked file 2개, Issue 0개, 연결 계정 권한은 read-only.
-- 이 기록은 C의 기준선 확인 증거이며, A가 repo/Issue 상태를 실제 갱신해야 하는 v3 Plugin Gate를 대신하지 않는다.
+## C-EVID-007 — GitHub 작업 흐름
 
-## 후속 증거 이름 규칙
+- Branch: `agent/role-c-qa-security`
+- Draft PR: <https://github.com/shan1343/0812-discord-goal-referee/pull/3>
+- C가 GitHub 연동으로 Issue #4, #5, #6, #7을 생성하고 #4의 같은 입력 retest 상태를 갱신했다.
+- Open runtime FAIL은 A가 수정 commit을 push한 뒤 C가 같은 probe로 재시험한다.
 
-```text
-C_<test-id>_<before|after>_<YYYYMMDD-HHMM>.<png|txt|json>
-```
+## 현재 C gate
 
-스크린샷은 token, 개인 ID, 실제 메시지를 가린 뒤 저장한다. D의 최종 `evidence/pass_matrix.md`는 이 인덱스의 PASS 증거만 링크하고, BLOCKED/NOT_RUN을 PASS로 바꾸지 않는다.
+- Goldset 5개 + B binding: PASS
+- 정적 secret scan: PASS
+- A regression suite: PASS
+- Runtime security/assignment: FAIL
+- 완결된 Issue → A commit → same-input retest: 0/3
+- 따라서 Role C 최종 acceptance는 아직 **INCOMPLETE**이다.
